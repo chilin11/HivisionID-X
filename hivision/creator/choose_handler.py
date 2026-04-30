@@ -1,29 +1,24 @@
-from hivision.creator.human_matting import *
-from hivision.creator.face_detector import *
+import functools
+from hivision.creator.human_matting import extract_human, MATTING_MODELS
+from hivision.creator.face_detector import (
+    detect_face_mtcnn,
+    detect_face_face_plusplus,
+    detect_face_retinaface,
+)
 
-
-HUMAN_MATTING_MODELS = [
-    "modnet_photographic_portrait_matting",
-    "birefnet-v1-lite",
-    "hivision_modnet",
-    "rmbg-1.4",
-]
+HUMAN_MATTING_MODELS = list(MATTING_MODELS.keys())
 
 FACE_DETECT_MODELS = ["face++ (联网Online API)", "mtcnn", "retinaface-resnet50"]
 
-
 def choose_handler(creator, matting_model_option=None, face_detect_option=None):
-    if matting_model_option == "modnet_photographic_portrait_matting":
-        creator.matting_handler = extract_human_modnet_photographic_portrait_matting
-    elif matting_model_option == "mnn_hivision_modnet":
-        creator.matting_handler = extract_human_mnn_modnet
-    elif matting_model_option == "rmbg-1.4":
-        creator.matting_handler = extract_human_rmbg
-    elif matting_model_option == "birefnet-v1-lite":
-        creator.matting_handler = extract_human_birefnet_lite
+    # Set Matting Handler
+    if matting_model_option in MATTING_MODELS:
+        creator.matting_handler = functools.partial(extract_human, model_name=matting_model_option)
     else:
-        creator.matting_handler = extract_human
+        # Fallback to default
+        creator.matting_handler = functools.partial(extract_human, model_name="birefnet-v1")
 
+    # Set Detection Handler
     if (
         face_detect_option == "face_plusplus"
         or face_detect_option == "face++ (联网Online API)"

@@ -52,18 +52,12 @@
 
 <br>
 
-# 🤩 最近更新
+# 🤩 最新更新 (HivisionID-X Modernized)
 
-- 在线体验： [![Spaces](https://img.shields.io/badge/🤗-Open%20in%20Spaces-blue)](https://huggingface.co/spaces/TheEeeeLin/HivisionIDPhotos)、[![][modelscope-shield]][modelscope-link]、[![][modelers-shield]][modelers-link]、[![][compshare-shield]][compshare-link]
-
-- 2024.11.20: Gradio Demo增加**打印排版**选项卡，支持六寸、五寸、A4、3R、4R五种排版尺寸
-- 2024.11.16: API接口增加美颜参数
-- 2024.09.25: 增加**五寸相纸**和**JPEG下载**选项｜默认照片下载支持300DPI
-- 2024.09.24: API接口增加base64图像传入选项 | Gradio Demo增加**排版照裁剪线**功能
-- 2024.09.22: Gradio Demo增加**野兽模式**，可设置内存加载策略 | API接口增加**dpi、face_alignment**参数
-- 2024.09.18: Gradio Demo增加**分享模版照**功能、增加**美式证件照**背景选项
-- 2024.09.17: Gradio Demo增加**自定义底色-HEX输入**功能 | **（社区贡献）C++版本** - [HivisionIDPhotos-cpp](https://github.com/zjkhahah/HivisionIDPhotos-cpp) 贡献 by [zjkhahah](https://github.com/zjkhahah)
-- 2024.09.16: Gradio Demo增加**人脸旋转对齐**功能，自定义尺寸输入支持**毫米**单位
+- **[NEW] Native High-Resolution Pipeline (原生高清裁剪与抠图)**: 彻底移除了原有代码对高清大图的暴力压缩限制（2000px/600px）。现在上传超高清照片，生成的排版照与证件照将保留最高原生分辨率，完美解决6寸打印模糊痛点！
+- **[NEW] 智能设备硬件加速检测 (Auto Device Acceleration)**: 新增统一的设备管理模块。代码能够自动检测并使用最佳的推理硬件：支持 `Mac MPS/CoreML`、`Intel/AMD OpenVINO`、`Nvidia CUDA` 以及 `CPU`，大幅度提升大模型推理速度。
+- **[NEW] 核心代码深度模块化 (Modular Architecture)**: 重构了人像抠图（Matting）与美颜（Beauty）代码为注册器（Registry）模式，移除落后的 `modnet` 模型，默认配置更高清的 `BirefNet-v1` 和 `RMBG-1.4`，未来接入新模型只需几行代码。
+- **[NEW] 现代 Python 版本兼容**: 移除了旧的 Numpy 限制，全面兼容更新的 Python 3.12+ 生态。
 
 <br>
 

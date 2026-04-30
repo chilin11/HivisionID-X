@@ -11,20 +11,21 @@ from hivision.plugin.watermark import Watermarker, WatermarkerStyles
 def save_image_dpi_to_bytes(image: np.ndarray, output_image_path: str = None, dpi: int = 300):
     """
     设置图像的DPI（每英寸点数）并返回字节流
-
-    :param image: numpy.ndarray, 输入的图像数组
-    :param output_image_path: Path to save the resized image. 保存调整大小后的图像的路径。
-    :param dpi: int, 要设置的DPI值，默认为300
     """
     image = Image.fromarray(image)
-    # 创建一个字节流对象
     byte_stream = io.BytesIO()
-    # 将图像保存到字节流
-    image.save(byte_stream, format="PNG", dpi=(dpi, dpi))
-    # 获取字节流的内容
+    
+    save_format = "PNG"
+    if output_image_path:
+        ext = output_image_path.split('.')[-1].lower()
+        if ext in ['jpg', 'jpeg']:
+            save_format = "JPEG"
+            if image.mode == 'RGBA':
+                image = image.convert('RGB')
+    
+    image.save(byte_stream, format=save_format, dpi=(dpi, dpi))
     image_bytes = byte_stream.getvalue()
 
-    # Save the image to the output path
     if output_image_path:
         with open(output_image_path, "wb") as f:
             f.write(image_bytes)

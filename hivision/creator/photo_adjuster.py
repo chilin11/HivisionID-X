@@ -235,27 +235,6 @@ def standard_photo_resize(input_image: np.array, size):
 
 def resize_image_by_min(input_image, esp=600):
     """
-    将图像缩放为最短边至少为 esp 的图像。
-    :param input_image: 输入图像（OpenCV 矩阵）
-    :param esp: 缩放后的最短边长
-    :return: 缩放后的图像，缩放倍率
+    HD is meant to preserve original quality, so we do not artificially upscale it.
     """
-    height, width = input_image.shape[0], input_image.shape[1]
-    min_border = min(height, width)
-    if min_border < esp:
-        if height >= width:
-            new_width = esp
-            new_height = height * esp // width
-        else:
-            new_height = esp
-            new_width = width * esp // height
-
-        return (
-            cv2.resize(
-                input_image, (new_width, new_height), interpolation=cv2.INTER_AREA
-            ),
-            new_height / height,
-        )
-
-    else:
-        return input_image, 1
+    return input_image, 1

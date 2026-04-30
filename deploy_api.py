@@ -19,6 +19,8 @@ import numpy as np
 import cv2
 from starlette.middleware.cors import CORSMiddleware
 from starlette.formparsers import MultiPartParser
+from fastapi.staticfiles import StaticFiles
+import os
 
 # 设置Starlette表单字段大小限制
 MultiPartParser.max_part_size = 10 * 1024 * 1024  # 10MB
@@ -47,9 +49,8 @@ async def idphoto_inference(
     input_image_base64: str = Form(None),
     height: int = Form(413),
     width: int = Form(295),
-    human_matting_model: str = Form("modnet_photographic_portrait_matting"),
+    human_matting_model: str = Form("birefnet-v1"),
     face_detect_model: str = Form("mtcnn"),
-    hd: bool = Form(True),
     dpi: int = Form(300),
     face_align: bool = Form(False),
     whitening_strength: int = Form(0),
@@ -93,20 +94,18 @@ async def idphoto_inference(
             saturation_strength=saturation_strength,
         )
     except FaceError:
-        result_message = {"status": False}
-    # 如果检测到人脸数量等于1, 则返回标准证和高清照结果（png 4通道图像）
+        result_message = {"status": False, "error": "Face not detected"}
+    except FileNotFoundError as e:
+        result_message = {"status": False, "error": f"Model file missing: {str(e)}"}
+    except Exception as e:
+        result_message = {"status": False, "error": str(e)}
+    # 如果检测到人脸数量等于1, 则返回高清照结果（png 4通道图像）
     else:
-        result_image_standard_bytes = save_image_dpi_to_bytes(result.standard, None, dpi)
-        
+        result_image_hd_bytes = save_image_dpi_to_bytes(result.hd, None, dpi)
         result_message = {
             "status": True,
-            "image_base64_standard": bytes_2_base64(result_image_standard_bytes),
+            "image_base64_hd": bytes_2_base64(result_image_hd_bytes),
         }
-
-        # 如果hd为True, 则增加高清照结果（png 4通道图像）
-        if hd:
-            result_image_hd_bytes = save_image_dpi_to_bytes(result.hd, None, dpi)
-            result_message["image_base64_hd"] = bytes_2_base64(result_image_hd_bytes)
 
     return result_message
 
@@ -366,8 +365,14 @@ async def idphoto_crop_inference(
     return result_message
 
 
+# Mount the React UI statically
+web_ui_path = os.path.join(os.path.dirname(__file__), "web-ui", "dist")
+if os.path.exists(web_ui_path):
+    app.mount("/", StaticFiles(directory=web_ui_path, html=True), name="static")
+else:
+    print(f"Warning: Web UI not found at {web_ui_path}. Did you run 'npm run build'?")
+
 if __name__ == "__main__":
     import uvicorn
-
     # 在8080端口运行推理服务
     uvicorn.run(app, host="0.0.0.0", port=8080)

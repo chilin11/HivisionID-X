@@ -54,8 +54,14 @@ def detect_face_mtcnn(ctx: Context, scale: int = 2):
         # 如果只有一个人脸，将人脸坐标放大
         for item, param in enumerate(faces[0]):
             faces[0][item] = param * 2
-    if len(faces) != 1:
-        raise FaceError("Expected 1 face, but got {}".format(len(faces)), len(faces))
+            
+    if len(faces) == 0:
+        raise FaceError("Expected 1 face, but got 0", 0)
+
+    if len(faces) > 1:
+        # 按照面积降序排序，同时保持 faces 和 landmarks 的对应关系
+        combined = sorted(zip(faces, landmarks), key=lambda x: (x[0][2] - x[0][0]) * (x[0][3] - x[0][1]), reverse=True)
+        faces, landmarks = [combined[0][0]], [combined[0][1]]
 
     # 计算人脸坐标
     left = faces[0][0]
@@ -110,30 +116,28 @@ def detect_face_face_plusplus(ctx: Context):
 
     if status_code == 200:
         face_num = response_json["face_num"]
-        if face_num == 1:
-            face_rectangle = response_json["faces"][0]["face_rectangle"]
+        if face_num == 0:
+            raise FaceError("Expected 1 face, but got 0", 0)
 
-            # 获取人脸关键点
-            # landmarks = response_json["faces"][0]["landmark"]
-            # print("face++ landmarks", landmarks)
+        # 如果有多个脸，按面积降序排序选最大
+        faces = response_json["faces"]
+        if face_num > 1:
+            faces = sorted(faces, key=lambda x: x["face_rectangle"]["width"] * x["face_rectangle"]["height"], reverse=True)
 
-            # headpose 是一个字典，包含俯仰角（pitch）、偏航角（yaw）和滚转角（roll）
-            # headpose示例 {'pitch_angle': 6.997899, 'roll_angle': 1.8011835, 'yaw_angle': 5.043002}
-            headpose = response_json["faces"][0]["attributes"]["headpose"]
-            # 以眼睛为标准，计算的人脸偏转角度，用于人脸矫正
-            roll_angle = headpose["roll_angle"] / 2
+        face_rectangle = faces[0]["face_rectangle"]
 
-            ctx.face["rectangle"] = (
-                face_rectangle["left"],
-                face_rectangle["top"],
-                face_rectangle["width"],
-                face_rectangle["height"],
-            )
-            ctx.face["roll_angle"] = roll_angle
-        else:
-            raise FaceError(
-                "Expected 1 face, but got {}".format(face_num), len(face_num)
-            )
+        # headpose 是一个字典，包含俯仰角（pitch）、偏航角（yaw）和滚转角（roll）
+        headpose = faces[0]["attributes"]["headpose"]
+        # 以眼睛为标准，计算的人脸偏转角度，用于人脸矫正
+        roll_angle = headpose["roll_angle"] / 2
+
+        ctx.face["rectangle"] = (
+            face_rectangle["left"],
+            face_rectangle["top"],
+            face_rectangle["width"],
+            face_rectangle["height"],
+        )
+        ctx.face["roll_angle"] = roll_angle
 
     elif status_code == 401:
         raise APIError(
@@ -190,12 +194,17 @@ def detect_face_retinaface(ctx: Context):
         )
 
     faces_num = len(faces_dets)
+    if faces_num == 0:
+        raise FaceError("Expected 1 face, but got 0", 0)
+
+    # 如果有多个脸，按照面积大小进行降序排序，选最大的那个
+    if faces_num > 1:
+        faces_dets = sorted(faces_dets, key=lambda x: (x[2] - x[0]) * (x[3] - x[1]), reverse=True)
+
     faces_landmarks = []
     for face_det in faces_dets:
         faces_landmarks.append(face_det[5:])
 
-    if faces_num != 1:
-        raise FaceError("Expected 1 face, but got {}".format(faces_num), faces_num)
     face_det = faces_dets[0]
     ctx.face["rectangle"] = (
         face_det[0],

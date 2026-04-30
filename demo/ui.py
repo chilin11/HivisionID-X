@@ -84,7 +84,7 @@ def create_ui(
                             value=LOCALES["size_mode"][DEFAULT_LANG]["choices"][0],
                             min_width=520,
                         )
-                        
+
                     # 尺寸列表
                     with gr.Row(visible=True) as size_list_row:
                         size_list_options = gr.Dropdown(
@@ -124,16 +124,24 @@ def create_ui(
                         label=LOCALES["bg_color"][DEFAULT_LANG]["label"],
                         value=LOCALES["bg_color"][DEFAULT_LANG]["choices"][0],
                     )
-                    
+
                     # 自定义颜色RGB
                     with gr.Row(visible=False) as custom_color_rgb:
-                        custom_color_R = gr.Number(value=0, label="R", minimum=0, maximum=255, interactive=True)
-                        custom_color_G = gr.Number(value=0, label="G", minimum=0, maximum=255, interactive=True)
-                        custom_color_B = gr.Number(value=0, label="B", minimum=0, maximum=255, interactive=True)
-                    
+                        custom_color_R = gr.Number(
+                            value=0, label="R", minimum=0, maximum=255, interactive=True
+                        )
+                        custom_color_G = gr.Number(
+                            value=0, label="G", minimum=0, maximum=255, interactive=True
+                        )
+                        custom_color_B = gr.Number(
+                            value=0, label="B", minimum=0, maximum=255, interactive=True
+                        )
+
                     # 自定义颜色HEX
                     with gr.Row(visible=False) as custom_color_hex:
-                        custom_color_hex_value = gr.Text(value="000000", label="Hex", interactive=True)
+                        custom_color_hex_value = gr.Text(
+                            value="000000", label="Hex", interactive=True
+                        )
 
                     # 渲染模式
                     render_options = gr.Radio(
@@ -141,14 +149,14 @@ def create_ui(
                         label=LOCALES["render_mode"][DEFAULT_LANG]["label"],
                         value=LOCALES["render_mode"][DEFAULT_LANG]["choices"][0],
                     )
-                    
+
                     with gr.Row():
                         # 插件模式
                         plugin_options = gr.CheckboxGroup(
                             label=LOCALES["plugin"][DEFAULT_LANG]["label"],
                             choices=LOCALES["plugin"][DEFAULT_LANG]["choices"],
                             interactive=True,
-                            value=LOCALES["plugin"][DEFAULT_LANG]["value"]
+                            value=LOCALES["plugin"][DEFAULT_LANG]["value"],
                         )
 
                 # TAB2 - 高级参数 ------------------------------------------------
@@ -340,7 +348,7 @@ def create_ui(
                             watermark_text_space,
                         ],
                     )
-                
+
                 # TAB5 - 打印 ------------------------------------------------
                 with gr.Tab(
                     LOCALES["print_tab"][DEFAULT_LANG]["label"]
@@ -351,12 +359,11 @@ def create_ui(
                         value=LOCALES["print_switch"][DEFAULT_LANG]["choices"][0],
                         interactive=True,
                     )
-                
 
                 img_but = gr.Button(
                     LOCALES["button"][DEFAULT_LANG]["label"],
                     elem_id="btn",
-                    variant="primary"
+                    variant="primary",
                 )
 
                 example_images = gr.Examples(
@@ -376,51 +383,42 @@ def create_ui(
                 notification = gr.Text(
                     label=LOCALES["notification"][DEFAULT_LANG]["label"], visible=False
                 )
+                # 重新布局：将高清照与排版照并排显示，隐藏标准照
                 with gr.Row():
-                    # 标准照
-                    img_output_standard = gr.Image(
-                        label=LOCALES["standard_photo"][DEFAULT_LANG]["label"],
-                        height=350,
-                        format="png",
-                    )
-                    # 高清照
                     img_output_standard_hd = gr.Image(
                         label=LOCALES["hd_photo"][DEFAULT_LANG]["label"],
                         height=350,
                         format="png",
                     )
-                # 排版照
-                img_output_layout = gr.Image(
-                    label=LOCALES["layout_photo"][DEFAULT_LANG]["label"],
-                    height=350,
-                    format="png",
-                )
+                    img_output_layout = gr.Image(
+                        label=LOCALES["layout_photo"][DEFAULT_LANG]["label"],
+                        height=350,
+                        format="png",
+                    )
+
+                # 隐藏被抛弃的标准照组件（保持对象存在以防底层代码依赖它报错）
+                img_output_standard = gr.Image(visible=False)
+                img_output_standard_png = gr.Image(visible=False)
+
                 # 模版照片
                 with gr.Accordion(
                     LOCALES["template_photo"][DEFAULT_LANG]["label"], open=False
-                ) as template_image_accordion:      
+                ) as template_image_accordion:
                     img_output_template = gr.Gallery(
                         label=LOCALES["template_photo"][DEFAULT_LANG]["label"],
                         height=350,
                         format="png",
                     )
-                # 抠图图像
+                # 抠图图像 (仅保留高清抠图)
                 with gr.Accordion(
                     LOCALES["matting_image"][DEFAULT_LANG]["label"], open=False
                 ) as matting_image_accordion:
-                    with gr.Row():
-                        img_output_standard_png = gr.Image(
-                            label=LOCALES["standard_photo_png"][DEFAULT_LANG]["label"],
-                            height=350,
-                            format="png",
-                            elem_id="standard_photo_png",
-                        )
-                        img_output_standard_hd_png = gr.Image(
-                            label=LOCALES["hd_photo_png"][DEFAULT_LANG]["label"],
-                            height=350,
-                            format="png",
-                            elem_id="hd_photo_png",
-                        )
+                    img_output_standard_hd_png = gr.Image(
+                        label=LOCALES["hd_photo_png"][DEFAULT_LANG]["label"],
+                        height=350,
+                        format="png",
+                        elem_id="hd_photo_png",
+                    )
 
             # ---------------- 多语言切换函数 ----------------
             def change_language(language):
@@ -588,10 +586,13 @@ def create_ui(
 
             def change_color(colors, lang):
                 return {
-                    custom_color_rgb: gr.update(visible = colors == LOCALES["bg_color"][lang]["choices"][-2]),
-                    custom_color_hex: gr.update(visible = colors == LOCALES["bg_color"][lang]["choices"][-1]),
+                    custom_color_rgb: gr.update(
+                        visible=colors == LOCALES["bg_color"][lang]["choices"][-2]
+                    ),
+                    custom_color_hex: gr.update(
+                        visible=colors == LOCALES["bg_color"][lang]["choices"][-1]
+                    ),
                 }
-                
 
             def change_size_mode(size_option_item, lang):
                 choices = LOCALES["size_mode"][lang]["choices"]

@@ -104,40 +104,70 @@ class IDCreator:
             horizontal_flip=horizontal_flip,
         )
 
-
         # 总的开始时间
         total_start_time = time.time()
-        
+
         self.ctx = Context(params)
         ctx = self.ctx
         ctx.processing_image = image
-        ctx.processing_image = U.resize_image_esp(
-            ctx.processing_image, 2000
-        )  # 将输入图片 resize 到最大边长为 2000
+        # Removed aggressive 2000px downscaling to support high-resolution printing
         ctx.origin_image = ctx.processing_image.copy()
         self.before_all and self.before_all(ctx)
 
-        # 1. ------------------人像抠图------------------
+        # 1. ------------------人脸检测 (Pre-crop pass) ------------------
+        print("[1]  Start Face Detection (Pre-crop)...")
+        start_detection_time = time.time()
+        self.detection_handler(ctx)
+        end_detection_time = time.time()
+        print(
+            f"[1]  Face Detection Time: {end_detection_time - start_detection_time:.3f}s"
+        )
+        self.after_detect and self.after_detect(ctx)
+
+        # 1.1 ------------------智能预裁剪 ------------------
+        if ctx.face["rectangle"] is not None:
+            x, y, w, h = ctx.face["rectangle"]
+            x, y, w, h = int(x), int(y), int(w), int(h)
+            margin_w = int(w * 1.5)
+            margin_h_up = int(h * 2.0)
+            margin_h_down = int(h * 3.0)
+
+            x1 = max(0, x - margin_w)
+            y1 = max(0, y - margin_h_up)
+            x2 = min(ctx.origin_image.shape[1], x + w + margin_w)
+            y2 = min(ctx.origin_image.shape[0], y + h + margin_h_down)
+
+            ctx.processing_image = ctx.origin_image[y1:y2, x1:x2].copy()
+            ctx.origin_image = ctx.processing_image.copy()  # Match downstream size
+
+            # Update face coordinates relative to new crop
+            ctx.face["rectangle"] = (x - x1, y - y1, w, h)
+            print(
+                f"[1.1] Smart Pre-crop applied. Canvas resized to {ctx.processing_image.shape[:2]}"
+            )
+
+        # 2. ------------------人像抠图------------------
         # 如果仅裁剪，则不进行抠图
         if not ctx.params.crop_only:
             # 调用抠图工作流
-            print("[1]  Start Human Matting...")
+            print("[2]  Start Human Matting...")
             start_matting_time = time.time()
             self.matting_handler(ctx)
             end_matting_time = time.time()
-            print(f"[1]  Human Matting Time: {end_matting_time - start_matting_time:.3f}s")
+            print(
+                f"[2]  Human Matting Time: {end_matting_time - start_matting_time:.3f}s"
+            )
             self.after_matting and self.after_matting(ctx)
         # 如果进行抠图
         else:
             ctx.matting_image = ctx.processing_image
 
-
-        # 2. ------------------美颜------------------
-        print("[2]  Start Beauty...")
+        # 3. ------------------美颜------------------
+        print("[3]  Start Beauty...")
         start_beauty_time = time.time()
         self.beauty_handler(ctx)
         end_beauty_time = time.time()
-        print(f"[2]  Beauty Time: {end_beauty_time - start_beauty_time:.3f}s")
+        print(f"[3]  Beauty Time: {end_beauty_time - start_beauty_time:.3f}s")
 
         # 如果仅换底，则直接返回抠图结果
         if ctx.params.change_bg_only:
@@ -152,17 +182,9 @@ class IDCreator:
             self.after_all and self.after_all(ctx)
             return ctx.result
 
-        # 3. ------------------人脸检测------------------
-        print("[3]  Start Face Detection...")
-        start_detection_time = time.time()
-        self.detection_handler(ctx)
-        end_detection_time = time.time()
-        print(f"[3]  Face Detection Time: {end_detection_time - start_detection_time:.3f}s")
-        self.after_detect and self.after_detect(ctx)
-
-        # 3.1 ------------------人脸对齐------------------
+        # 4. ------------------人脸对齐------------------
         if ctx.params.face_alignment and abs(ctx.face["roll_angle"]) > 2:
-            print("[3.1]  Start Face Alignment...")
+            print("[4]  Start Face Alignment...")
             start_alignment_time = time.time()
             from hivision.creator.rotation_adjust import rotate_bound_4channels
 
@@ -178,7 +200,9 @@ class IDCreator:
             self.detection_handler(ctx)
             self.after_detect and self.after_detect(ctx)
             end_alignment_time = time.time()
-            print(f"[3.1]  Face Alignment Time: {end_alignment_time - start_alignment_time:.3f}s")
+            print(
+                f"[4]  Face Alignment Time: {end_alignment_time - start_alignment_time:.3f}s"
+            )
 
         # 4. ------------------图像调整------------------
         print("[4]  Start Image Post-Adjustment...")
@@ -187,7 +211,9 @@ class IDCreator:
             adjust_photo(ctx)
         )
         end_adjust_time = time.time()
-        print(f"[4]  Image Post-Adjustment Time: {end_adjust_time - start_adjust_time:.3f}s")
+        print(
+            f"[4]  Image Post-Adjustment Time: {end_adjust_time - start_adjust_time:.3f}s"
+        )
 
         # 5. ------------------返回结果------------------
         ctx.result = Result(

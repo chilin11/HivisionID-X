@@ -371,7 +371,7 @@ class IDPhotoProcessor:
         # 生成排版照片
         result_image_layout, result_image_layout_visible = self._generate_image_layout(
             idphoto_json,
-            result_image_standard,
+            result_image_hd,
             language,
         )
         
