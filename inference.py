@@ -66,6 +66,12 @@ parser.add_argument(
     default=300,
 )
 parser.add_argument(
+    "--keep_original_size",
+    type=bool,
+    help="排版时是否保持原始图像尺寸（用于高清排版）",
+    default=False,
+)
+parser.add_argument(
     "--face_align",
     type=bool,
     help="是否进行人脸旋转矫正",
@@ -151,6 +157,7 @@ elif args.type == "generate_layout_photos":
         typography_rotate,
         height=size[0],
         width=size[1],
+        keep_original_size=args.keep_original_size,
     )
 
     if args.kb:

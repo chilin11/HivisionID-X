@@ -442,7 +442,7 @@ class IDPhotoProcessor:
     def _generate_image_layout(
         self,
         idphoto_json,
-        result_image_standard,
+        result_image_hd,
         language,
     ):
         """生成排版照片"""
@@ -469,7 +469,7 @@ class IDPhotoProcessor:
         )
         
         result_image_layout = generate_layout_image(
-            result_image_standard,
+            result_image_hd,
             typography_arr,
             typography_rotate,
             height=idphoto_json["size"][0],
@@ -477,6 +477,7 @@ class IDPhotoProcessor:
             crop_line=idphoto_json["layout_photo_crop_line_option"],
             LAYOUT_HEIGHT=choose_layout_size[0],
             LAYOUT_WIDTH=choose_layout_size[1],
+            keep_original_size=True,
         )
 
         return result_image_layout, True

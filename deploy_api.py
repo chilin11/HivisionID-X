@@ -196,6 +196,7 @@ async def generate_layout_photos(
     width: int = Form(295),
     kb: int = Form(None),
     dpi: int = Form(300),
+    keep_original_size: bool = Form(False),
 ):
     # try:
     if input_image_base64:
@@ -212,7 +213,8 @@ async def generate_layout_photos(
     )
 
     result_layout_image = generate_layout_image(
-        img, typography_arr, typography_rotate, height=size[0], width=size[1]
+        img, typography_arr, typography_rotate, height=size[0], width=size[1],
+        keep_original_size=keep_original_size,
     ).astype(np.uint8)
 
     result_layout_image = cv2.cvtColor(result_layout_image, cv2.COLOR_RGB2BGR)
