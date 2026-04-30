@@ -11,6 +11,10 @@ HUMAN_MATTING_MODELS = list(MATTING_MODELS.keys())
 FACE_DETECT_MODELS = ["face++ (联网Online API)", "mtcnn", "retinaface-resnet50"]
 
 def choose_handler(creator, matting_model_option=None, face_detect_option=None):
+    # Strip UI suffix (e.g. " (很慢)")
+    if matting_model_option:
+        matting_model_option = matting_model_option.split(" ")[0]
+        
     # Set Matting Handler
     if matting_model_option in MATTING_MODELS:
         creator.matting_handler = functools.partial(extract_human, model_name=matting_model_option)

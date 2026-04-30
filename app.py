@@ -6,20 +6,19 @@ from hivision.creator.choose_handler import HUMAN_MATTING_MODELS
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Show all models directly
-HUMAN_MATTING_MODELS_CHOICE = HUMAN_MATTING_MODELS
+# Add "(很慢)" suffix to slow models for UI display
+SLOW_MODELS = ["birefnet-v1-lite", "birefnet-v1"]
+HUMAN_MATTING_MODELS_CHOICE = []
+for m in HUMAN_MATTING_MODELS:
+    if m == "birefnet-portrait":
+        HUMAN_MATTING_MODELS_CHOICE.append(f"{m} (最慢，最好)")
+    elif any(s in m for s in SLOW_MODELS):
+        HUMAN_MATTING_MODELS_CHOICE.append(f"{m} (很慢)")
+    else:
+        HUMAN_MATTING_MODELS_CHOICE.append(m)
 
-FACE_DETECT_MODELS = ["face++ (联网Online API)", "mtcnn"]
-FACE_DETECT_MODELS_EXPAND = (
-    ["retinaface-resnet50"]
-    if os.path.exists(
-        os.path.join(
-            root_dir, "hivision/creator/retinaface/weights/retinaface-resnet50.onnx"
-        )
-    )
-    else []
-)
-FACE_DETECT_MODELS_CHOICE = FACE_DETECT_MODELS + FACE_DETECT_MODELS_EXPAND
+FACE_DETECT_MODELS = ["face++ (联网Online API)", "mtcnn", "retinaface-resnet50"]
+FACE_DETECT_MODELS_CHOICE = FACE_DETECT_MODELS
 
 LANGUAGE = ["zh", "en", "ko", "ja"]
 
@@ -48,7 +47,7 @@ if __name__ == "__main__":
         FACE_DETECT_MODELS_CHOICE,
         LANGUAGE,
     )
-    
+
     # 如果RUN_MODE是Beast，打印已开启野兽模式
     if os.getenv("RUN_MODE") == "beast":
         print("[Beast mode activated.] 已开启野兽模式。")

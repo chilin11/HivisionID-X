@@ -17,7 +17,7 @@ from hivision.device import load_onnx_model
 
 WEIGHTS = {
     "rmbg-1.4": os.path.join(os.path.dirname(__file__), "weights", "rmbg-1.4.onnx"),
-    "birefnet-v1-lite": os.path.join(
+    "birefnet-v1-lite (很慢)": os.path.join(
         os.path.dirname(__file__), "weights", "birefnet-v1-lite.onnx"
     ),
     "birefnet-v1": os.path.join(
@@ -31,6 +31,7 @@ class BaseMattingModel:
         "rmbg-2.0": "https://huggingface.co/briaai/RMBG-1.4/resolve/main/onnx/model.onnx?download=true", # Fallback for demo
         "birefnet-v1-lite": "https://github.com/ZhengPeng7/BiRefNet/releases/download/v1/BiRefNet-general-bb_swin_v1_tiny-epoch_232.onnx",
         "birefnet-v1": "https://github.com/ZhengPeng7/BiRefNet/releases/download/v1/BiRefNet-general-bb_swin_v1_tiny-epoch_232.onnx", # Fallback to lite
+        "birefnet-portrait": "https://github.com/ZhengPeng7/BiRefNet/releases/download/v1/BiRefNet-portrait-epoch_150.onnx",
         "hivision_modnet": "https://github.com/Zeyi-Lin/HivisionIDPhotos/releases/download/pretrained-model/hivision_modnet.onnx",
         "modnet_photographic_portrait_matting": "https://github.com/Zeyi-Lin/HivisionIDPhotos/releases/download/pretrained-model/modnet_photographic_portrait_matting.onnx",
     }
@@ -132,12 +133,56 @@ class BirefNetModel(BaseMattingModel):
         self.release_model()
         return np.array(new_im)
 
+class ModNetModel(BaseMattingModel):
+    def process(self, input_image: np.ndarray) -> np.ndarray:
+        self.load_model()
+        
+        orig_image = Image.fromarray(input_image)
+        
+        # Read and resize
+        im = cv2.cvtColor(input_image, cv2.COLOR_RGB2BGR)
+        im_h, im_w = im.shape[:2]
+        if im_w >= im_h:
+            im_rh = self.ref_size
+            im_rw = int(im_w / im_h * self.ref_size)
+        else:
+            im_rw = self.ref_size
+            im_rh = int(im_h / im_w * self.ref_size)
+            
+        im_rw = im_rw - im_rw % 32
+        im_rh = im_rh - im_rh % 32
+        
+        im = cv2.resize(im, (im_rw, im_rh), interpolation=cv2.INTER_AREA)
+        im = np.float32(im) / 255.0
+        im = (im - 0.5) / 0.5
+        im = np.expand_dims(im, axis=0)
+        im = np.transpose(im, (0, 3, 1, 2))
+
+        input_name = self.session.get_inputs()[0].name
+        
+        time_st = time()
+        matte = self.session.run(None, {input_name: im})[0]
+        print(f"ModNet Inference time: {time() - time_st:.4f} seconds")
+
+        matte = np.squeeze(matte)
+        matte = cv2.resize(matte, (im_w, im_h), interpolation=cv2.INTER_AREA)
+        
+        im_array = (matte * 255).astype(np.uint8)
+        pil_im = Image.fromarray(im_array, mode="L")
+
+        new_im = Image.new("RGBA", orig_image.size, (0, 0, 0, 0))
+        new_im.paste(orig_image, mask=pil_im)
+        
+        self.release_model()
+        return np.array(new_im)
+
 
 # Model Registry
 MATTING_MODELS = {
-    "rmbg-1.4": RMBGModel("rmbg-1.4", WEIGHTS.get("rmbg-1.4", ""), ref_size=1024),
     "rmbg-2.0": RMBGModel("rmbg-2.0", os.path.join(os.path.dirname(__file__), "weights", "rmbg-2.0.onnx"), ref_size=1024),
     "birefnet-v1": BirefNetModel("birefnet-v1", WEIGHTS.get("birefnet-v1", ""), ref_size=1024),
+    "birefnet-portrait": BirefNetModel("birefnet-portrait", os.path.join(os.path.dirname(__file__), "weights", "birefnet-portrait.onnx"), ref_size=1024),
+    "modnet_photographic_portrait_matting": ModNetModel("modnet_photographic_portrait_matting", os.path.join(os.path.dirname(__file__), "weights", "modnet_photographic_portrait_matting.onnx"), ref_size=512),
 }
 
 def extract_human(ctx: Context, model_name: str = "birefnet-v1"):
