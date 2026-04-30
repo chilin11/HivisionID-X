@@ -1,6 +1,7 @@
+import os
+import urllib.request
 import numpy as np
 import cv2
-import onnxruntime
 from hivision.creator.retinaface.box_utils import decode, decode_landm
 from hivision.creator.retinaface.prior_box import PriorBox
 
@@ -75,8 +76,6 @@ def retinaface_detect_faces(image, model_path: str, sess=None):
         if not os.path.exists(model_path):
             url = "https://github.com/Zeyi-Lin/HivisionIDPhotos/releases/download/pretrained-model/retinaface-resnet50.onnx"
             print(f"Face model not found locally. Auto-downloading from {url}...")
-            import urllib.request
-            import os
             os.makedirs(os.path.dirname(model_path), exist_ok=True)
             urllib.request.urlretrieve(url, model_path)
             print(f"Download complete: {model_path}")
