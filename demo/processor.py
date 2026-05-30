@@ -696,8 +696,9 @@ class IDPhotoProcessor:
         """创建错误响应"""
         return [gr.update(value=None) for _ in range(4)] + [
             None,
+            None,
+            gr.update(visible=False),
             gr.update(
                 value=LOCALES["size_mode"][language]["custom_size_eror"], visible=True
             ),
-            None,
         ]

@@ -5,3 +5,6 @@ requests
 mtcnn-runtime
 tqdm
 starlette
+fastapi
+uvicorn
+python-multipart
