@@ -8,3 +8,4 @@ starlette
 fastapi
 uvicorn
 python-multipart
+Pillow
