@@ -40,7 +40,7 @@
 - [项目简介](#-项目简介)
 - [社区](#-社区)
 - [准备工作](#-准备工作)
-- [Demo启动](#-运行-gradio-demo)
+- [Web UI启动](#-启动-web-ui)
 - [Python推理](#-python-推理)
 - [API服务部署](#️-部署-api-服务)
 - [Docker部署](#-docker-部署)
@@ -130,7 +130,6 @@ cd  HivisionIDPhotos
 
 ```bash
 pip install -r requirements.txt
-pip install -r requirements-app.txt
 ```
 
 ## 3. 下载人像抠图模型权重文件
@@ -194,15 +193,13 @@ pip install torch --index-url https://download.pytorch.org/whl/cu121
 
 <br>
 
-# ⚡️ 运行 Gradio Demo
+# ⚡️ 启动 Web UI
 
 ```bash
-python app.py
+python deploy_api.py
 ```
 
-运行程序将生成一个本地 Web 页面，在页面中可完成证件照的操作与交互。
-
-<img src="assets/harry.png" width=900>
+运行程序将启动 FastAPI 服务并提供 Web UI 界面，在浏览器中访问 [http://127.0.0.1:7860](http://127.0.0.1:7860) 即可完成证件照的操作与交互。
 
 <br>
 
@@ -307,21 +304,15 @@ docker compose build
 
 ## 2. 运行服务
 
-**启动 Gradio Demo 服务**
+**启动服务**
 
-运行下面的命令，在你的本地访问 [http://127.0.0.1:7860](http://127.0.0.1:7860/) 即可使用。
+运行下面的命令，在你的本地访问 [http://127.0.0.1:7860](http://127.0.0.1:7860/) 即可使用 Web UI 和 API。
 
 ```bash
 docker run -d -p 7860:7860 linzeyi/hivision_idphotos
 ```
 
-**启动 API 后端服务**
-
-```bash
-docker run -d -p 8080:8080 linzeyi/hivision_idphotos python3 deploy_api.py
-```
-
-**两个服务同时启动**
+**使用 Docker Compose 启动**
 
 ```bash
 docker compose up -d
@@ -336,7 +327,6 @@ docker compose up -d
 | FACE_PLUS_API_KEY	 | 可选	| 这是你在 Face++ 控制台申请的 API 密钥	 | `7-fZStDJ····` |
 | FACE_PLUS_API_SECRET	 | 可选	| Face++ API密钥对应的Secret | `VTee824E····` |
 | RUN_MODE | 可选 | 运行模式，可选值为`beast`(野兽模式)。野兽模式下人脸检测和抠图模型将不释放内存，从而获得更快的二次推理速度。建议内存16GB以上尝试。 | `beast` |
-| DEFAULT_LANG | 可选 | Gradio Demo启动时的默认语言| `en` |
 
 docker使用环境变量示例：
 ```bash
@@ -344,7 +334,6 @@ docker run  -d -p 7860:7860 \
     -e FACE_PLUS_API_KEY=7-fZStDJ···· \
     -e FACE_PLUS_API_SECRET=VTee824E···· \
     -e RUN_MODE=beast \
-    -e DEFAULT_LANG=en \
     linzeyi/hivision_idphotos  
 ```
 
@@ -354,8 +343,7 @@ docker run  -d -p 7860:7860 \
 
 ## 1. 如何修改预设尺寸和颜色？
 
-- 尺寸：修改[size_list_CN.csv](demo/assets/size_list_CN.csv)后再次运行 `app.py` 即可，其中第一列为尺寸名，第二列为高度，第三列为宽度。
-- 颜色：修改[color_list_CN.csv](demo/assets/color_list_CN.csv)后再次运行 `app.py` 即可，其中第一列为颜色名，第二列为Hex值。
+Web UI 中的预设尺寸和颜色由前端代码定义，可在 `web-ui/dist/index.html` 中修改。
 
 ## 2. 如何修改水印字体？
 
@@ -366,17 +354,13 @@ docker run  -d -p 7860:7860 \
 
 1. 将模板图片放到`hivision/plugin/template/assets`文件夹下。模板图片是一个4通道的透明png。
 2. 在`hivision/plugin/template/assets/template_config.json`文件中添加最新的模板信息，其中`width`为模板图宽度(px)，`height`为模板图高度(px)，`anchor_points`为模板中透明区域的四个角的坐标(px)；`rotation`为透明区域相对于垂直方向的旋转角度，>0为逆时针，<0为顺时针。
-3. 在`demo/processor.py`的`_generate_image_template`函数中的`TEMPLATE_NAME_LIST`变量添加最新的模板名
+3. 在`web-ui/dist/index.html`中添加对应的模板选项。
 
 <img src="assets/social_template.png" width="500">
 
-## 4. 如何修改Gradio Demo的顶部导航栏？
+## 4. 如何添加/修改「打印排版」中的尺寸？
 
-- 修改`demo/assets/title.md`
-
-## 5. 如何添加/修改「打印排版」中的尺寸？
-
-- 修改`demo/locales.py`中的`print_switch`字典，添加/修改新的尺寸名称和尺寸参数，然后重新运行`python app.py`
+在`web-ui/dist/index.html`中修改打印排版相关的尺寸配置。
 
 <br>
 

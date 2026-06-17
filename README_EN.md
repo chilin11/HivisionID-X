@@ -40,7 +40,7 @@ English / [中文](README.md) / [日本語](README_JP.md) / [한국어](README_K
 - [Project Overview](#-project-overview)
 - [Community](#-community)
 - [Preparation](#-preparation)
-- [Demo Startup](#-run-gradio-demo)
+- [Web UI Startup](#-start-web-ui)
 - [Python Inference](#-python-inference)
 - [API Service Deployment](#️-deploy-api-service)
 - [Docker Deployment](#-docker-deployment)
@@ -56,14 +56,14 @@ English / [中文](README.md) / [日本語](README_JP.md) / [한국어](README_K
 
 - Online Experience: [![SwanHub Demo](https://img.shields.io/static/v1?label=Demo&message=SwanHub%20Demo&color=blue)](https://swanhub.co/ZeYiLin/HivisionIDPhotos/demo)、[![Spaces](https://img.shields.io/badge/🤗-Open%20in%20Spaces-blue)](https://huggingface.co/spaces/TheEeeeLin/HivisionIDPhotos)、[![][modelscope-shield]][modelscope-link]、[![][compshare-shield]][compshare-link]
 
-- 2024.11.20: Gradio Demo adds **Print Layout** option, supports six-inch, five-inch, A4, 3R, and 4R layout sizes
+- 2024.11.20: Web UI adds **Print Layout** option, supports six-inch, five-inch, A4, 3R, and 4R layout sizes
 - 2024.11.16: API interface adds beauty effect parameter
-- 2024.09.24: API interface adds base64 image input option | Gradio Demo adds **Layout Photo Cropping Lines** feature
-- 2024.09.22: Gradio Demo adds **Beast Mode** and **DPI** parameter
-- 2024.09.18: Gradio Demo adds **Share Template Photos** feature and **American Style** background option
-- 2024.09.17: Gradio Demo adds **Custom Background Color-HEX Input** feature | **(Community Contribution) C++ Version** - [HivisionIDPhotos-cpp](https://github.com/zjkhahah/HivisionIDPhotos-cpp) contributed by [zjkhahah](https://github.com/zjkhahah)
-- 2024.09.16: Gradio Demo adds **Face Rotation Alignment** feature, custom size input supports **millimeters**
-- 2024.09.14: Gradio Demo adds **Custom DPI** feature, adds Japanese and Korean support, adds **Adjust Brightness, Contrast, Sharpness** feature
+- 2024.09.24: API interface adds base64 image input option | Web UI adds **Layout Photo Cropping Lines** feature
+- 2024.09.22: Web UI adds **Beast Mode** and **DPI** parameter
+- 2024.09.18: Web UI adds **Share Template Photos** feature and **American Style** background option
+- 2024.09.17: Web UI adds **Custom Background Color-HEX Input** feature | **(Community Contribution) C++ Version** - [HivisionIDPhotos-cpp](https://github.com/zjkhahah/HivisionIDPhotos-cpp) contributed by [zjkhahah](https://github.com/zjkhahah)
+- 2024.09.16: Web UI adds **Face Rotation Alignment** feature, custom size input supports **millimeters**
+- 2024.09.14: Web UI adds **Custom DPI** feature, adds Japanese and Korean support, adds **Adjust Brightness, Contrast, Sharpness** feature
 
 <br>
 
@@ -134,7 +134,6 @@ cd  HivisionIDPhotos
 
 ```bash
 pip install -r requirements.txt
-pip install -r requirements-app.txt
 ```
 
 ## 3. Download Weight Files
@@ -189,15 +188,13 @@ After completing the installation, call the `birefnet-v1-lite` model to utilize 
 > TIP: CUDA installations are backward compatible. For example, if your CUDA version is 12.6 but the highest version currently matched by torch is 12.4, it's still possible to install version 12.4 on your computer.
 <br>
 
-# 🚀 Run Gradio Demo
+# 🚀 Start Web UI
 
 ```bash
-python app.py
+python deploy_api.py
 ```
 
-Running the program will generate a local web page where you can perform operations and interact with ID photos.
-
-<img src="assets/harry.png" width=900>
+Running the command will start a FastAPI server with a Web UI. Access [http://127.0.0.1:7860](http://127.0.0.1:7860) in your browser to interact with ID photos.
 
 <br>
 
@@ -301,21 +298,15 @@ docker compose build
 
 ## 2. Run Services
 
-**Start Gradio Demo Service**
+**Start Service**
 
-Run the following command, and you can access it locally at [http://127.0.0.1:7860](http://127.0.0.1:7860/).
+Run the following command, and you can access the Web UI and API locally at [http://127.0.0.1:7860](http://127.0.0.1:7860/).
 
 ```bash
 docker run -d -p 7860:7860 linzeyi/hivision_idphotos
 ```
 
-**Start API Backend Service**
-
-```bash
-docker run -d -p 8080:8080 linzeyi/hivision_idphotos python3 deploy_api.py
-```
-
-**Start Both Services Simultaneously**
+**Start with Docker Compose**
 
 ```bash
 docker compose up -d
@@ -374,8 +365,7 @@ docker run  -d -p 7860:7860 \
 
 ## 1. How to modify preset sizes and colors?
 
-- Size: After modifying [size_list_EN.csv](demo/assets/size_list_EN.csv), run `app.py` again. The first column is the size name, the second column is the height, and the third column is the width.
-- Color: After modifying [color_list_EN.csv](demo/assets/color_list_EN.csv), run `app.py` again. The first column is the color name, and the second column is the Hex value.
+The preset sizes and colors in the Web UI are defined in the frontend code. You can modify them in `web-ui/dist/index.html`.
 
 ## 2. How to Change the Watermark Font?
 
@@ -386,13 +376,9 @@ docker run  -d -p 7860:7860 \
 
 1. Place the template image in the `hivision/plugin/template/assets` folder. The template image should be a 4-channel transparent PNG.
 2. Add the latest template information to the `hivision/plugin/template/assets/template_config.json` file. Here, `width` is the template image width (px), `height` is the template image height (px), `anchor_points` are the coordinates (px) of the four corners of the transparent area in the template; `rotation` is the rotation angle of the transparent area relative to the vertical direction, where >0 is counterclockwise and <0 is clockwise.
-3. Add the name of the latest template to the `TEMPLATE_NAME_LIST` variable in the `_generate_image_template` function of `demo/processor.py`.
+3. Add the template option in `web-ui/dist/index.html`.
 
 <img src="assets/social_template.png" width="500">
-
-## 4. How to Modify the Top Navigation Bar of the Gradio Demo?
-
-- Modify the `demo/assets/title.md` file.
 
 <br>
 

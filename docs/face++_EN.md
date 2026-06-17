@@ -41,11 +41,11 @@ To securely use the API Key and API Secret in your code, it is recommended to se
 
 > **Note**: You may need to run the above commands before starting your application, or add these commands to your shell configuration file (e.g., `.bashrc` or `.bash_profile`) so that they are automatically loaded each time you start the terminal.
 
-## 4. Start Gradio Service
-Run the Gradio service, and select "face++" in the "Face Detection Model".
+## 4. Start Service
+Run the service, and select "face++" in the "Face Detection Model".
 
 ```bash
-python app.py
+python deploy_api.py
 ```
 
 ![alt text](../assets/face++.png)

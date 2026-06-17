@@ -2,12 +2,11 @@
 from PyInstaller.utils.hooks import collect_data_files
 
 datas = [('hivisionai', 'hivisionai'), ('hivision_modnet.onnx', '.'), ('size_list_CN.csv', '.')]
-datas += collect_data_files('gradio_client')
-datas += collect_data_files('gradio')
+datas += collect_data_files('web-ui')
 
 
 a = Analysis(
-    ['app/web.py'],
+    ['deploy_api.py'],
     pathex=[],
     binaries=[],
     datas=datas,
@@ -15,7 +14,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['gradio', 'gradio_client'],
     noarchive=False,
     optimize=0,
 )
@@ -40,5 +39,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['assets\hivisionai.ico'],
+    icon=['assets/hivisionai.ico'],
 )

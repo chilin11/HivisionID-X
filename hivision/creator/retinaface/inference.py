@@ -153,22 +153,3 @@ def retinaface_detect_faces(image, model_path: str, sess=None):
     return dets, retinaface
 
 
-if __name__ == "__main__":
-    import gradio as gr
-
-    # Create Gradio interface
-    iface = gr.Interface(
-        fn=retinaface_detect_faces,
-        inputs=[
-            gr.Image(
-                type="numpy", label="上传图片", height=400
-            ),  # Set the height to 400
-            gr.Textbox(value="./FaceDetector.onnx", label="ONNX模型路径"),
-        ],
-        outputs=gr.Number(label="检测到的人脸数量"),
-        title="人脸检测",
-        description="上传图片并提供ONNX模型路径以检测人脸数量。",
-    )
-
-    # Launch the Gradio app
-    iface.launch()

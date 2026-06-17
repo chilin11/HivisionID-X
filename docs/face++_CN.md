@@ -39,12 +39,12 @@
 
 > **注意**: 您可能需要在启动应用程序之前运行上述命令，或者将这些命令添加到您的 shell 配置文件（例如 `.bashrc` 或 `.bash_profile`）中，以便每次启动终端时自动加载。
 
-## 4. 启动Gradio服务
+## 4. 启动服务
 
-运行gradio服务，在「人脸检测模型」中选择「face++」即可。
+运行服务，在「人脸检测模型」中选择「face++」即可。
 
 ```bash
-python app.py
+python deploy_api.py
 ```
 
 ![alt text](../assets/face++.png)

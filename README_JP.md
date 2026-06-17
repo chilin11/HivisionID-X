@@ -53,13 +53,13 @@
 
 - オンライン体験： [![SwanHub Demo](https://img.shields.io/static/v1?label=Demo&message=SwanHub%20Demo&color=blue)](https://swanhub.co/ZeYiLin/HivisionIDPhotos/demo)、[![Spaces](https://img.shields.io/badge/🤗-Open%20in%20Spaces-blue)](https://huggingface.co/spaces/TheEeeeLin/HivisionIDPhotos)、[![][modelscope-shield]][modelscope-link]、[![][compshare-shield]][compshare-link]
 
-- 2024.11.20: Gradioデモに**印刷レイアウト**オプションを追加、六つ切り、五つ切り、A4、3R、4Rレイアウトサイズをサポート
+- 2024.11.20: Web UIに**印刷レイアウト**オプションを追加、六つ切り、五つ切り、A4、3R、4Rレイアウトサイズをサポート
 - 2024.11.16: APIインターフェースに美顔効果パラメータを追加
-- 2024.09.24: APIインターフェースにbase64画像入力オプションを追加 | Gradioデモに**レイアウト写真トリミングライン**機能を追加
-- 2024.09.22: Gradioデモに**ビーストモード**と**DPI**パラメータを追加
-- 2024.09.18: Gradioデモに**テンプレート写真の共有**機能を追加、**米国式**背景オプションを追加
-- 2024.09.17: Gradioデモに**カスタム底色-HEX入力**機能を追加 | **（コミュニティ貢献）C++バージョン** - [HivisionIDPhotos-cpp](https://github.com/zjkhahah/HivisionIDPhotos-cpp) 貢献 by [zjkhahah](https://github.com/zjkhahah)
-- 2024.09.16: Gradioデモに**顔回転対応**機能を追加、カスタムサイズ入力に**ミリメートル**をサポート
+- 2024.09.24: APIインターフェースにbase64画像入力オプションを追加 | Web UIに**レイアウト写真トリミングライン**機能を追加
+- 2024.09.22: Web UIに**ビーストモード**と**DPI**パラメータを追加
+- 2024.09.18: Web UIに**テンプレート写真の共有**機能を追加、**米国式**背景オプションを追加
+- 2024.09.17: Web UIに**カスタム底色-HEX入力**機能を追加 | **（コミュニティ貢献）C++バージョン** - [HivisionIDPhotos-cpp](https://github.com/zjkhahah/HivisionIDPhotos-cpp) 貢献 by [zjkhahah](https://github.com/zjkhahah)
+- 2024.09.16: Web UIに**顔回転対応**機能を追加、カスタムサイズ入力に**ミリメートル**をサポート
 
 <br>
 
@@ -130,7 +130,6 @@ cd  HivisionIDPhotos
 
 ```bash
 pip install -r requirements.txt
-pip install -r requirements-app.txt
 ```
 
 ## 3. 重みファイルをダウンロードする
@@ -185,15 +184,13 @@ pip install torch --index-url https://download.pytorch.org/whl/cu121
 
 <br>
 
-# 🚀 デモの起動
+# 🚀 Web UIの起動
 
 ```bash
-python app.py
+python deploy_api.py
 ```
 
-プログラムを実行すると、ローカルWebページが生成され、ページ内で証明写真の操作と対話が可能になります。
-
-<img src="assets/harry.png" width=900>
+コマンドを実行するとFastAPIサービスが起動し、ブラウザで [http://127.0.0.1:7860](http://127.0.0.1:7860) にアクセスして証明写真の操作と対話が可能になります。
 
 <br>
 
@@ -297,21 +294,15 @@ docker compose build
 
 ## 2. サービスを実行
 
-**Gradioデモサービスを起動**
+**サービスを起動**
 
-次のコマンドを実行し、ローカルで [http://127.0.0.1:7860](http://127.0.0.1:7860/) にアクセスすると使用可能です。
+次のコマンドを実行し、ローカルで [http://127.0.0.1:7860](http://127.0.0.1:7860/) にアクセスするとWeb UIとAPIが使用可能です。
 
 ```bash
 docker run -d -p 7860:7860 linzeyi/hivision_idphotos
 ```
 
-**APIバックエンドサービスを起動**
-
-```bash
-docker run -d -p 8080:8080 linzeyi/hivision_idphotos python3 deploy_api.py
-```
-
-**2つのサービスを同時に起動**
+**Docker Composeで起動**
 
 ```bash
 docker compose up -d
@@ -368,8 +359,7 @@ docker run  -d -p 7860:7860 \
 
 ## 1. 基本的なサイズと色をどのように変更しますか？
 
-- サイズ: [size_list_EN.csv](demo/assets/size_list_EN.csv) ファイルを修正した後、`app.py`を再実行すれば大丈夫です。最初の列はサイズ名、二番目の列は高さ、三番目の列は幅です。
-- 色: [color_list_EN.csv](demo/assets/color_list_EN.csv) ファイルを修正した後、`app.py`を再実行すれば大丈夫です。最初の列は色名、二番目の列はHex値です。
+Web UIのプリセットサイズと色はフロントエンドコードで定義されています。`web-ui/dist/index.html`で変更できます。
 
 ## 2. ウォーターマークのフォントをどのように変更しますか？
 
@@ -380,13 +370,9 @@ docker run  -d -p 7860:7860 \
 
 1. テンプレート画像を`hivision/plugin/template/assets`フォルダーに置きます。テンプレート画像は4チャンネルの透明PNGです。
 2. `hivision/plugin/template/assets/template_config.json`ファイルに最新のテンプレート情報を追加します。ここで`width`はテンプレート画像の幅(px)、`height`はテンプレート画像の高さ(px)、`anchor_points`はテンプレートの透明領域の4つの隅の座標(px)です。`rotation`は透明領域の垂直方向に対する回転角度で、>0は反時計回り、<0は時計回りです。
-3. `demo/processor.py`の`_generate_image_template`関数内の`TEMPLATE_NAME_LIST`変数に最新のテンプレート名を追加します。
+3. `web-ui/dist/index.html`に対応するテンプレートオプションを追加します。
 
 <img src="assets/social_template.png" width="500">
-
-## 4. Gradio Demoの上部ナビゲーションバーをどのように変更しますか？
-
-- `demo/assets/title.md`ファイルを修正します。
 
 <br>
 

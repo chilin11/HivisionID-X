@@ -75,17 +75,3 @@ def make_whitening_png(image, strength):
     return cv2.cvtColor(output_image, cv2.COLOR_RGBA2BGRA)
 
 
-if __name__ == "__main__":
-    import gradio as gr
-
-    demo = gr.Interface(
-        fn=make_whitening,
-        inputs=[
-            gr.Image(type="pil", image_mode="RGBA", label="Input Image"),
-            gr.Slider(0, 30, step=1, label="Whitening Strength"),
-        ],
-        outputs=gr.Image(type="pil"),
-        title="Image Whitening Demo",
-        description="Upload an image and adjust the whitening strength to see the effect.",
-    )
-    demo.launch()

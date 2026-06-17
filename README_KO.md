@@ -53,13 +53,13 @@
 
 - 온라인 체험: [![SwanHub Demo](https://img.shields.io/static/v1?label=Demo&message=SwanHub%20Demo&color=blue)](https://swanhub.co/ZeYiLin/HivisionIDPhotos/demo)、[![Spaces](https://img.shields.io/badge/🤗-Open%20in%20Spaces-blue)](https://huggingface.co/spaces/TheEeeeLin/HivisionIDPhotos)、[![][modelscope-shield]][modelscope-link]、[![][compshare-shield]][compshare-link]
 
-- 2024.11.20: Gradio 데모에 **인쇄 레이아웃** 옵션 추가, 6인치, 5인치, A4, 3R, 4R 레이아웃 크기 지원
-- 2024.11.16: API 인터페이스에 뷰티 효과 매개변수 추가
-- 2024.09.24: API 인터페이스에 base64 이미지 입력 옵션 추가 | Gradio 데모에 **레이아웃 사진 자르기 선** 기능 추가
-- 2024.09.22: Gradio Demo에 **버스트 모드** 및 **DPI** 매개변수 추가
-- 2024.09.18: Gradio Demo에 **템플릿 사진 공유** 기능 추가, **미국식** 배경 옵션 추가
-- 2024.09.17: Gradio Demo에 **커스텀 배경색-HEX 입력** 기능 추가 | **(커뮤니티 기여) C++ 버전** - [HivisionIDPhotos-cpp](https://github.com/zjkhahah/HivisionIDPhotos-cpp) 기여 by [zjkhahah](https://github.com/zjkhahah)
-- 2024.09.16: Gradio Demo에 **얼굴 회전 정렬** 기능 추가, 커스텀 사이즈 입력에 **밀리미터** 단위 추가
+- 2024.11.20: Web UI에 **인쇄 레이아웃** 옵션 추가, 6인치, 5인치, A4, 3R, 4R 레이아웃 크기 지원
+- 2024.11.16: API 인터페이스에 미용 효과 매개변수 추가
+- 2024.09.24: API 인터페이스에 base64 이미지 입력 옵션 추가 | Web UI에 **레이아웃 사진 자르기 선** 기능 추가
+- 2024.09.22: Web UI에 **버스트 모드** 및 **DPI** 매개변수 추가
+- 2024.09.18: Web UI에 **템플릿 사진 공유** 기능 추가, **미국식** 배경 옵션 추가
+- 2024.09.17: Web UI에 **커스텀 배경색-HEX 입력** 기능 추가 | **(커뮤니티 기여) C++ 버전** - [HivisionIDPhotos-cpp](https://github.com/zjkhahah/HivisionIDPhotos-cpp) 기여 by [zjkhahah](https://github.com/zjkhahah)
+- 2024.09.16: Web UI에 **얼굴 회전 정렬** 기능 추가, 커스텀 사이즈 입력에 **밀리미터** 단위 추가
 
 <br>
 
@@ -131,7 +131,6 @@ cd  HivisionIDPhotos
 
 ```bash
 pip install -r requirements.txt
-pip install -r requirements-app.txt
 ```
 
 ## 3. 가중치 파일 다운로드하기
@@ -186,15 +185,13 @@ pip install torch --index-url https://download.pytorch.org/whl/cu121
 
 <br>
 
-# 🚀 데모 실행
+# 🚀 Web UI 실행
 
 ```bash
-python app.py
+python deploy_api.py
 ```
 
-프로그램을 실행하면 로컬 웹 페이지가 생성되어 페이지 내에서 증명사진의 조작 및 상호작용이 가능합니다.
-
-<img src="assets/harry.png" width=900>
+명령어를 실행하면 FastAPI 서비스가 시작되며, 브라우저에서 [http://127.0.0.1:7860](http://127.0.0.1:7860)에 접근하여 증명사진의 조작 및 상호작용이 가능합니다.
 
 <br>
 
@@ -300,21 +297,15 @@ docker compose build
 
 ## 2. 서비스 실행
 
-**Gradio 데모 서비스를 시작합니다**
+**서비스 시작**
 
-다음 명령어를 실행하여 로컬에서 [http://127.0.0.1:7860](http://127.0.0.1:7860/)에 접근하면 사용 가능합니다.
+다음 명령어를 실행하여 로컬에서 [http://127.0.0.1:7860](http://127.0.0.1:7860/)에 접근하면 Web UI와 API를 사용할 수 있습니다.
 
 ```bash
 docker run -d -p 7860:7860 linzeyi/hivision_idphotos
 ```
 
-**API 백엔드 서비스를 시작합니다**
-
-```bash
-docker run -d -p 8080:8080 linzeyi/hivision_idphotos python3 deploy_api.py
-```
-
-**두 개의 서비스를 동시에 시작합니다**
+**Docker Compose로 시작**
 
 ```bash
 docker compose up -d
@@ -371,8 +362,7 @@ docker run  -d -p 7860:7860 \
 
 ## 1. 기본 크기와 색상을 어떻게 수정하나요?
 
-- 크기: [size_list_EN.csv](demo/assets/size_list_EN.csv) 파일을 수정한 후 `app.py`를 다시 실행하면 됩니다. 첫 번째 열은 크기 이름, 두 번째 열은 높이, 세 번째 열은 너비입니다.
-- 색상: [color_list_EN.csv](demo/assets/color_list_EN.csv) 파일을 수정한 후 `app.py`를 다시 실행하면 됩니다. 첫 번째 열은 색상 이름, 두 번째 열은 Hex 값입니다.
+Web UI의 프리셋 크기와 색상은 프론트엔드 코드로 정의됩니다. `web-ui/dist/index.html`에서 수정할 수 있습니다.
 
 ## 2. 워터마크 글꼴을 어떻게 수정하나요?
 
@@ -383,13 +373,9 @@ docker run  -d -p 7860:7860 \
 
 1. 템플릿 이미지를 `hivision/plugin/template/assets` 폴더에 넣습니다. 템플릿 이미지는 4채널 투명 PNG입니다.
 2. `hivision/plugin/template/assets/template_config.json` 파일에 최신 템플릿 정보를 추가합니다. 여기서 `width`는 템플릿 이미지의 너비(px), `height`는 템플릿 이미지의 높이(px), `anchor_points`는 템플릿의 투명 영역 네 모서리의 좌표(px)입니다. `rotation`은 투명 영역의 수직 방향에 대한 회전 각도로, >0은 반시계 방향, <0은 시계 방향입니다.
-3. `demo/processor.py`의 `_generate_image_template` 함수 내의 `TEMPLATE_NAME_LIST` 변수에 최신 템플릿 이름을 추가합니다.
+3. `web-ui/dist/index.html`에 해당 템플릿 옵션을 추가합니다.
 
 <img src="assets/social_template.png" width="500">
-
-## 4. Gradio Demo의 상단 내비게이션 바를 어떻게 수정하나요?
-
-- `demo/assets/title.md` 파일을 수정합니다.
 
 <br>
 
