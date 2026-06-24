@@ -13,7 +13,6 @@ scripts/sync_modelscope.py
 scripts/sync_all.py
 **/flagged/
 # build outputs
-dist
 build
 # checkpoint
 *.pth
