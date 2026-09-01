@@ -10,3 +10,7 @@ __pycache__/
 .Python
 env/
 .env
+# 未被注册的旧模型（省 176MB）
+hivision/creator/weights/rmbg-1.4.onnx
+# 用户测试数据不入镜像
+test/

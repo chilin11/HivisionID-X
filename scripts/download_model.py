@@ -89,6 +89,21 @@ def main(models_to_download):
             "format": "onnx",
             "location": "hivision/creator/retinaface/weights",
         },
+        "realesr-general-x4v3": {
+            "url": "https://huggingface.co/CoderViking/realesr-general-x4v3-onnx/resolve/main/realesr-general-x4v3.onnx",
+            "format": "onnx",
+            "location": "hivision/creator/weights",
+        },
+        "realesrgan-x4plus": {
+            "url": "https://huggingface.co/anakhiu/realesrgan-onnx/resolve/main/realesrgan_x4plus.onnx",
+            "format": "onnx",
+            "location": "hivision/creator/weights",
+        },
+        "ben2": {
+            "url": "https://huggingface.co/PramaLLC/BEN2/resolve/main/BEN2_Base.onnx",
+            "format": "onnx",
+            "location": "hivision/creator/weights",
+        },
     }
 
     # 如果选择下载所有模型
