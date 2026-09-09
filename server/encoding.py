@@ -26,7 +26,8 @@ from hivision.utils import add_background as _add_background, hex_to_rgb, resize
 # 背景渲染模式（与旧 API 的 render 序号对应）
 RENDER_MODES = ["pure_color", "updown_gradient", "center_gradient"]
 
-MAX_INPUT_SIDE = 3600  # 输入图最大边长：保留手机原图像素（细节的源头）
+MAX_INPUT_PIXELS = 24_000_000
+MAX_INPUT_BYTES = 40 * 1024 * 1024
 
 
 # ---------------------------------------------------------------------------
@@ -40,7 +41,11 @@ def _pil_open_transposed(data: bytes) -> Image.Image:
     关键：iPhone 等手机竖拍照片的 EXIF orientation=6/8，
     cv2.imdecode 会忽略该标签导致整条流水线拿到横置图像。
     """
+    if len(data) > MAX_INPUT_BYTES:
+        raise ValueError("图片文件不能超过 40 MB")
     pil = Image.open(io.BytesIO(data))
+    if pil.width * pil.height > MAX_INPUT_PIXELS:
+        raise ValueError("图片不能超过 2400 万像素，请先裁剪原图（不会自动降低清晰度）")
     pil = ImageOps.exif_transpose(pil)
     pil.load()
     return pil
@@ -50,7 +55,7 @@ def decode_bytes_to_rgb(data: bytes) -> np.ndarray:
     """图片字节 → RGB ndarray（EXIF 转正 + 大边上限）"""
     pil = _pil_open_transposed(data)
     img = np.asarray(pil.convert("RGB"))
-    return _limit_side(img)
+    return img
 
 
 def decode_base64_to_rgb(b64_str: str) -> np.ndarray:
@@ -67,10 +72,10 @@ def decode_bytes_to_rgba(data: bytes) -> np.ndarray:
     else:
         img = np.asarray(pil.convert("RGB"))
         img = np.dstack([img, np.full(img.shape[:2], 255, np.uint8)])
-    return _limit_side(img)
+    return img
 
 
-def _limit_side(img: np.ndarray, max_side: int = MAX_INPUT_SIDE) -> np.ndarray:
+def _limit_side(img: np.ndarray, max_side: int = 3600) -> np.ndarray:
     h, w = img.shape[:2]
     if max(h, w) > max_side:
         scale = max_side / max(h, w)
@@ -91,7 +96,7 @@ def encode_png(image: np.ndarray, dpi: int = 300) -> bytes:
     return buf.getvalue()
 
 
-def encode_jpeg(image: np.ndarray, dpi: int = 300, quality: int = 92) -> bytes:
+def encode_jpeg(image: np.ndarray, dpi: int = 300, quality: int = 95) -> bytes:
     """RGB ndarray → JPEG 字节（RGBA 会先铺白底）"""
     if image.ndim == 3 and image.shape[2] == 4:
         alpha = image[:, :, 3:4].astype(np.float32) / 255.0
@@ -99,7 +104,7 @@ def encode_jpeg(image: np.ndarray, dpi: int = 300, quality: int = 92) -> bytes:
         image = (rgb * alpha + 255 * (1 - alpha)).astype(np.uint8)
     pil = Image.fromarray(image)
     buf = io.BytesIO()
-    pil.save(buf, format="JPEG", quality=quality, dpi=(dpi, dpi))
+    pil.save(buf, format="JPEG", quality=quality, subsampling=0, dpi=(dpi, dpi))
     return buf.getvalue()
 
 
@@ -145,4 +150,8 @@ def parse_color(color: Optional[str], default: str = "ffffff") -> str:
             c = f"{r:02x}{g:02x}{b:02x}"
         except Exception:
             return default
+    try:
+        int(c, 16)
+    except ValueError:
+        return default
     return c.lower()

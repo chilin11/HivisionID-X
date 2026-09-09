@@ -422,9 +422,6 @@ def _finalize(
         if max_side < 1200:  # 原生分辨率过低时适度放大 + 锐化补偿
             scale = 1200 / max_side
             hd = cv2.resize(hd, (int(hd.shape[1] * scale), int(hd.shape[0] * scale)), interpolation=cv2.INTER_CUBIC)
-        elif max_side > 3000:  # 与输入上限一致，保留原生高清
-            scale = 3000 / max_side
-            hd = cv2.resize(hd, (int(hd.shape[1] * scale), int(hd.shape[0] * scale)), interpolation=cv2.INTER_AREA)
         hd = _sharpen_rgba(hd)
 
     quality = _evaluate(crop, face_area, crown_intact, engine, warnings, p)

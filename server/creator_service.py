@@ -17,6 +17,7 @@ Creator 服务层
 import hashlib
 import threading
 import time
+from functools import wraps
 from collections import OrderedDict
 from typing import Callable, Dict, Optional, Tuple
 
@@ -26,12 +27,23 @@ from hivision import IDCreator
 from hivision.error import FaceError
 from hivision.creator.choose_handler import choose_handler
 
-_LOCK = threading.Lock()
+_LOCK = threading.RLock()
+INFERENCE_LOCK = threading.RLock()
+
+
+def serialized_inference(fn):
+    """IDCreator owns mutable handlers/context: never share it concurrently."""
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        with INFERENCE_LOCK:
+            return fn(*args, **kwargs)
+    return wrapped
 _CREATOR: Optional[IDCreator] = None
 
 # 抠图缓存：key -> {"matting", "face", "angle", "skipped_detection"}
 _CACHE: "OrderedDict[str, dict]" = OrderedDict()
 _CACHE_MAX = 8
+_CACHE_BYTES = 256 * 1024 * 1024
 
 
 def get_creator() -> IDCreator:
@@ -52,7 +64,9 @@ def _cache_key(img: np.ndarray, matting_model: str, face_model: str, beauty: Dic
     h = hashlib.sha1(np.ascontiguousarray(img).tobytes()).hexdigest()
     return "|".join(
         [
-            h[:16],
+            h,
+            str(img.shape),
+            str(img.dtype),
             matting_model,
             face_model,
             f"w{beauty.get('whitening', 0)}",
@@ -70,7 +84,7 @@ def _cache_put(key: str, entry: dict) -> None:
     with _LOCK:
         _CACHE[key] = entry
         _CACHE.move_to_end(key)
-        while len(_CACHE) > _CACHE_MAX:
+        while len(_CACHE) > _CACHE_MAX or sum(e['matting'].nbytes for e in _CACHE.values()) > _CACHE_BYTES:
             _CACHE.popitem(last=False)
 
 
@@ -108,6 +122,7 @@ class MattingResult:
         self.elapsed = elapsed
 
 
+@serialized_inference
 def run_matting(
     img: np.ndarray,
     matting_model: str = "ben2",
@@ -121,6 +136,8 @@ def run_matting(
     horizontal_flip: bool = False,
     use_cache: bool = True,
     sig: str = "",
+    size: Tuple[int, int] = (413, 295),
+    head_top_range: Tuple[float, float] = (0.12, 0.10),
 ) -> MattingResult:
     """
     执行 抠图（含美颜、可选人脸对齐），带缓存与无人脸降级。
@@ -143,12 +160,14 @@ def run_matting(
         "saturation": saturation,
         "sharpen": sharpen,
     }
-    key = _cache_key(img, matting_model, face_detect_model, beauty, face_align, horizontal_flip)
+    # Mirroring is performed after matting; changing it must not rerun the model.
+    key = _cache_key(img, matting_model, face_detect_model, beauty, face_align, False)
 
     if use_cache:
         hit = _cache_get(key)
         if hit is not None:
             unchanged = sig and hit.get("sig") == sig
+            hit["sig"] = sig
             return MattingResult(
                 matting=hit["matting"],
                 face=hit["face"],
@@ -172,7 +191,8 @@ def run_matting(
         # 其 ctx.matting_image / ctx.face 供智能引擎使用，result 作为旧路径兜底
         legacy_result = creator(
             img,
-            size=(413, 295),
+            size=size,
+            head_top_range=head_top_range,
             whitening_strength=whitening,
             brightness_strength=brightness,
             contrast_strength=contrast,

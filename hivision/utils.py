@@ -196,7 +196,8 @@ def base64_2_numpy(base64_image: str) -> np.ndarray:
 # 字节流转base64
 def bytes_2_base64(img_byte_arr: bytes) -> str:
     base64_image = base64.b64encode(img_byte_arr).decode("utf-8")
-    return "data:image/png;base64," + base64_image
+    mime = "image/jpeg" if img_byte_arr.startswith(b"\xff\xd8\xff") else "image/png"
+    return f"data:{mime};base64," + base64_image
 
 
 def save_numpy_image(numpy_img, file_path):

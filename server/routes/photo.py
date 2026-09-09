@@ -11,6 +11,7 @@ r"""
 import time
 from typing import Optional
 
+import numpy as np
 from fastapi import APIRouter, File, Form, UploadFile
 
 from hivision.error import FaceError
@@ -45,7 +46,8 @@ def _request_sig(**kw) -> str:
 
 
 @router.post("/idphoto")
-async def idphoto_inference(
+@creator_service.serialized_inference
+def idphoto_inference(
     input_image: UploadFile = File(None),
     input_image_base64: str = Form(None),
     height: int = Form(413),
@@ -91,7 +93,7 @@ async def idphoto_inference(
     # 1. 抠图（含缓存与无人脸降级）
     sig = _request_sig(
         h=height, w=width, mm=human_matting_model, fm=face_detect_model,
-        smart=smart, hcr=head_center_ratio, hmr=head_measure_ratio,
+        smart=smart, hcr=head_center_ratio, hhf=head_height_fraction, hmr=head_measure_ratio,
         tdm=top_distance_max, tdn=top_distance_min,
         wh=whitening_strength, br=brightness_strength, ct=contrast_strength,
         st=saturation_strength, sh=sharpen_strength,
@@ -111,7 +113,9 @@ async def idphoto_inference(
             face_align=face_align,
             horizontal_flip=horizontal_flip,
             sig=sig,
-            use_cache=not force,
+            use_cache=not force and smart,
+            size=(height, width),
+            head_top_range=(top_distance_max, top_distance_min),
         )
     except Exception as e:
         return {"status": False, "error": str(e)}
@@ -130,9 +134,7 @@ async def idphoto_inference(
                 def enhancer(rgb, _m=sr_model):
                     # 裁剪 ≤2000px：原生全分辨率超分（零细节损失）
                     # 更大画布：降采样到 1000px 快速档（速度折中）
-                    side = max(rgb.shape[:2])
-                    mis = 0 if side <= 2000 else 1000
-                    return sr_engine.enhance(rgb, max_input_side=mis, model=_m)
+                    return sr_engine.enhance(rgb, max_input_side=0, model=_m)
                 sr_used = True
         except FileNotFoundError:
             warnings.append("sr_missing")
@@ -154,6 +156,7 @@ async def idphoto_inference(
             quality = cr.quality.to_dict()
             smart_ok = True
         except Exception:
+            sr_used = False
             warnings.append("engine_fallback")
 
     # 3. 兜底：智能引擎异常时退回旧管线结果
@@ -181,6 +184,9 @@ async def idphoto_inference(
                     "error": "Face not detected and no usable subject found — please use a clear front-facing portrait photo",
                 }
             standard_rgba, hd_rgba = result.standard, result.hd
+        if horizontal_flip:
+            standard_rgba = np.ascontiguousarray(standard_rgba[:, ::-1])
+            hd_rgba = np.ascontiguousarray(hd_rgba[:, ::-1])
         quality = evaluate_rgba(hd_rgba, (height, width)).to_dict()
 
     face_detected = mr.face is not None
@@ -223,7 +229,7 @@ async def idphoto_inference(
         hd_bytes = encoding.encode_png(hd_rgb, dpi)
     else:
         hd_bytes = encoding.encode_png(hd_rgba, dpi)
-    matting_bytes = encoding.encode_png(standard_rgba, dpi)  # 透明底标准尺寸
+    matting_bytes = encoding.encode_png(hd_rgba, dpi)  # 透明底也保留高清像素
 
     return {
         "status": True,
@@ -231,6 +237,9 @@ async def idphoto_inference(
         "image_base64_hd": encoding.to_base64(hd_bytes, "image/jpeg" if jpeg else "image/png"),
         "image_base64_matting": encoding.to_base64(matting_bytes, "image/png"),
         "standard_format": std_ext,
+        "hd_format": "jpg" if jpeg else "png",
+        "hd_size": {"height": hd_rgba.shape[0], "width": hd_rgba.shape[1]},
+        "dpi": dpi,
         "face_detected": face_detected,
         "super_res": sr_used,
         "quality": quality,
@@ -243,7 +252,7 @@ async def idphoto_inference(
 
 
 @router.post("/idphoto_crop")
-async def idphoto_crop_inference(
+def idphoto_crop_inference(
     input_image: UploadFile = File(None),
     input_image_base64: str = Form(None),
     height: int = Form(413),
@@ -306,10 +315,11 @@ async def idphoto_crop_inference(
 
 
 @router.post("/human_matting")
-async def human_matting_inference(
+@creator_service.serialized_inference
+def human_matting_inference(
     input_image: UploadFile = File(None),
     input_image_base64: str = Form(None),
-    human_matting_model: str = Form("modnet_photographic_portrait_matting"),
+    human_matting_model: str = Form("ben2"),
     dpi: int = Form(300),
 ):
     """仅抠图（旧逻辑保持不变）：输入 BGR 序解码 → creator → RGBA 输出"""
