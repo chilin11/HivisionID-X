@@ -20,7 +20,10 @@ from hivision.creator.choose_handler import choose_handler
 
 from server import creator_service, encoding
 from server import super_res as sr_engine
-from server.smart_crop import evaluate_rgba, flip_matting, matting_health, smart_crop
+from server.smart_crop import (
+    DEFAULT_HEAD_HEIGHT_FRACTION,
+    evaluate_rgba, flip_matting, matting_health, smart_crop,
+)
 
 router = APIRouter()
 
@@ -58,7 +61,7 @@ def idphoto_inference(
     # 智能构图
     smart: bool = Form(True),
     head_center_ratio: float = Form(0.45),  # 人脸中心目标高度位置
-    head_height_fraction: float = Form(0.66),  # 头部高度占比目标（发顶→下巴 / 画面高）
+    head_height_fraction: float = Form(DEFAULT_HEAD_HEIGHT_FRACTION),  # 头部高度占比目标（发顶→下巴 / 画面高）
     head_measure_ratio: float = Form(0.20),  # 面积占比兜底锚点（头高不可测时）
     top_distance_max: float = Form(0.12),  # 头顶留白上限
     top_distance_min: float = Form(0.10),  # 头顶留白下限
@@ -261,7 +264,7 @@ def idphoto_crop_inference(
     hd: bool = Form(True),
     dpi: int = Form(300),
     head_center_ratio: float = Form(0.45),
-    head_height_fraction: float = Form(0.66),
+    head_height_fraction: float = Form(DEFAULT_HEAD_HEIGHT_FRACTION),
     head_measure_ratio: float = Form(0.2),
     top_distance_max: float = Form(0.12),
     top_distance_min: float = Form(0.10),

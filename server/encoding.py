@@ -26,6 +26,7 @@ from hivision.utils import add_background as _add_background, hex_to_rgb, resize
 # 背景渲染模式（与旧 API 的 render 序号对应）
 RENDER_MODES = ["pure_color", "updown_gradient", "center_gradient"]
 
+# 模型处理像素预算；更大的原图自动等比例缩小，不裁切画面。
 MAX_INPUT_PIXELS = 24_000_000
 MAX_INPUT_BYTES = 40 * 1024 * 1024
 
@@ -43,16 +44,25 @@ def _pil_open_transposed(data: bytes) -> Image.Image:
     """
     if len(data) > MAX_INPUT_BYTES:
         raise ValueError("图片文件不能超过 40 MB")
-    pil = Image.open(io.BytesIO(data))
-    if pil.width * pil.height > MAX_INPUT_PIXELS:
-        raise ValueError("图片不能超过 2400 万像素，请先裁剪原图（不会自动降低清晰度）")
-    pil = ImageOps.exif_transpose(pil)
-    pil.load()
+    with Image.open(io.BytesIO(data)) as source:
+        pixels = source.width * source.height
+        if pixels > MAX_INPUT_PIXELS:
+            scale = (MAX_INPUT_PIXELS / pixels) ** 0.5
+            size = (max(1, int(source.width * scale)), max(1, int(source.height * scale)))
+            # 调色板图先转换，避免 Pillow 对 P 模式强制使用最近邻缩放。
+            pil = source
+            if source.mode in ("P", "PA", "1"):
+                pil = source.convert("RGBA" if "transparency" in source.info or source.mode == "PA" else "RGB")
+            pil = pil.resize(size, Image.Resampling.LANCZOS, reducing_gap=3.0)
+            pil = ImageOps.exif_transpose(pil)
+        else:
+            pil = ImageOps.exif_transpose(source)
+        pil.load()
     return pil
 
 
 def decode_bytes_to_rgb(data: bytes) -> np.ndarray:
-    """图片字节 → RGB ndarray（EXIF 转正 + 大边上限）"""
+    """图片字节 → RGB ndarray（超大图等比例缩小 + EXIF 转正）"""
     pil = _pil_open_transposed(data)
     img = np.asarray(pil.convert("RGB"))
     return img

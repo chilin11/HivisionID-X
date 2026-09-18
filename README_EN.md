@@ -117,6 +117,12 @@ We have shared some interesting applications and extensions of HivisionIDPhotos 
 
 # 🔧 Preparation
 
+The current version defaults to **59% head height** (hair top to chin), with a **50%–69%** adjustment range. When the source image allows it, top headroom stays within **10%–12%**. Framing no longer enlarges the head just to align the body with the bottom edge, leaving more room for the neck and shoulders. Requirements vary by document; these settings do not guarantee acceptance for every use.
+
+Photos above **24 megapixels** are automatically resized proportionally before processing, without cropping the frame. EXIF orientation is applied and smaller photos keep their original dimensions. The upload file limit remains **40 MB**.
+
+The published [chilin11/hivisionid-x:latest image](https://hub.docker.com/r/chilin11/hivisionid-x/tags) supports **linux/amd64 (x86_64)** and **linux/arm64**; Docker selects the matching platform automatically.
+
 Environment installation and dependencies:
 - Python >= 3.7 (project primarily tested on Python 3.10)
 - OS: Linux, Windows, MacOS
@@ -124,8 +130,8 @@ Environment installation and dependencies:
 ## 1. Clone the Project
 
 ```bash
-git clone https://github.com/Zeyi-Lin/HivisionIDPhotos.git
-cd  HivisionIDPhotos
+git clone https://github.com/chilin11/HivisionID-X.git
+cd HivisionID-X
 ```
 
 ## 2. Install Dependency Environment
@@ -133,8 +139,12 @@ cd  HivisionIDPhotos
 > It is recommended to create a python3.10 virtual environment using conda, then execute the following commands
 
 ```bash
-pip install -r requirements.txt
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
 ```
+
+On Windows, activate with `venv\Scripts\activate`. Activate the environment before running `python deploy_api.py`.
 
 ## 3. Download Weight Files
 
@@ -277,7 +287,7 @@ For detailed request methods, please refer to the [API Documentation](docs/api_E
 **Method 1: Pull the latest image:**
 
 ```bash
-docker pull linzeyi/hivision_idphotos
+docker pull chilin11/hivisionid-x:latest
 ```
 
 **Method 2: Directly build the image from Dockerfile:**
@@ -285,7 +295,7 @@ docker pull linzeyi/hivision_idphotos
 After ensuring that at least one [matting model weight file](#3-download-weight-files) is placed in the `hivision/creator/weights` directory, execute the following in the project root directory:
 
 ```bash
-docker build -t linzeyi/hivision_idphotos .
+docker build -t chilin11/hivisionid-x:latest .
 ```
 
 **Method 3: Build using Docker Compose:**
@@ -303,13 +313,27 @@ docker compose build
 Run the following command, and you can access the Web UI and API locally at [http://127.0.0.1:7860](http://127.0.0.1:7860/).
 
 ```bash
-docker run -d -p 7860:7860 linzeyi/hivision_idphotos
+docker run -d --name hivisionid-x -p 7860:7860 chilin11/hivisionid-x:latest
 ```
 
 **Start with Docker Compose**
 
 ```bash
-docker compose up -d
+docker compose pull
+docker compose up -d --no-build
+```
+
+To update an existing Compose deployment (restarting alone does not pull a new image):
+
+```bash
+docker compose pull
+docker compose up -d --no-build --force-recreate
+```
+
+After local code changes, restart the Python service and refresh the page. Run the regression tests with:
+
+```bash
+python -m unittest discover -s test -p 'test_*.py'
 ```
 
 ## Environment Variables

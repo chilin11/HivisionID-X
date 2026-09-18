@@ -35,8 +35,8 @@ DEFAULT_TOP_GAP_MIN = 0.10
 # 人脸中心默认高度位置（人脸中心在裁剪框高度的 45% 处）
 DEFAULT_FACE_CENTER_RATIO = 0.45
 # 头部高度占比默认目标（发顶→下巴 / 画面高度）：
-# 中国标准 ≈ 2/3；美国签证官方要求 50%-69%；取 0.66 与画幅无关，根治方形画幅"人头过大"
-DEFAULT_HEAD_HEIGHT_FRACTION = 0.66
+# 通用证件照折中值：符合常见 50%~69% 区间，并为颈部和肩膀保留空间。
+DEFAULT_HEAD_HEIGHT_FRACTION = 0.59
 # 人脸面积占比默认目标（仅当头高不可测时的兜底锚点）
 DEFAULT_HEAD_MEASURE_RATIO = 0.20
 
@@ -218,21 +218,22 @@ def _solve_crop_rect(
     ch = min(ch, float(H0), W0 / aspect)
     cw = ch * aspect
 
-    lo_ratio, hi_ratio = p.top_gap_min * 0.7, p.top_gap_max * 1.1
+    # 默认构图严格保持用户设定的头顶留白；无法同时满足时再走下方回退策略。
+    lo_ratio, hi_ratio = p.top_gap_min, p.top_gap_max
 
     # 2a) 双锚定精确解：主体底端悬空（画面下方有背景）时，
     #     联立「头顶留白 = 目标值」与「身体贴底」直接解出裁剪框：
     #         y1 = crown - gap·ch   且   y1 + ch = 主体底部
     #     ⇒ ch = subject_h / (1 - gap)
     #     约束：底部悬空须显著（>5% 画布高，缝隙过小不值得拉近）；
-    #     人脸占比畸变 ≤1.3×（防止"拉近导致人头过大"）；
+    #     只允许扩大取景范围，不为贴底放大人头、挤占肩膀空间；
     #     全身照不收腿（>1.348×ch 时走候选法裁到胸口）
     if subject.bottom > max(8, 0.05 * H0) and subject_h > 40:
         gap_target = float(np.clip((p.top_gap_min + p.top_gap_max) / 2, 0.06, 0.16))
         ch_d = subject_h / (1 - gap_target)
-        if ch * 0.877 <= ch_d <= ch * 1.348:  # sqrt(1.3), sqrt(1.8)
+        if ch <= ch_d <= ch * 1.348:
             ch_fit = min(ch_d, float(H0), W0 / aspect)
-            if ch_fit >= ch * 0.877:
+            if ch_fit >= ch:
                 ch = ch_fit
                 cw = ch * aspect
                 y1 = float(np.clip(crown - gap_target * ch, 0.0, max(0.0, H0 - ch)))
@@ -445,7 +446,7 @@ def smart_crop(
     :param matting: 抠图结果 RGBA（RGB 通道序），来自 creator.ctx.matting_image
     :param face: 人脸框 (x, y, w, h)，画布坐标系；无人脸时传 None（启用兜底构图）
     :param size: 目标标准尺寸 (H, W)
-    :param head_height_fraction: 头部高度占比目标（发顶→下巴 / 画面高，默认 0.66）
+    :param head_height_fraction: 头部高度占比目标（发顶→下巴 / 画面高，默认 0.59）
     :param head_measure_ratio: 人脸面积占比目标（头高不可测时的兜底锚点）
     :param enhancer: 可选高清增强器（RGB→RGB 同尺寸），如 Real-ESRGAN 超分；
         未提供时使用内置 USM 锐化

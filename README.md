@@ -54,6 +54,9 @@
 
 # 🤩 最新更新 (HivisionID-X Modernized)
 
+- **证件照构图调整**：默认头高（发顶到下巴）占画面高度 **59%**，页面支持 **50%–69%** 微调。原图空间允许时，头顶留白保持 **10%–12%**；避免为了身体贴底再次放大人物，给颈部和肩膀保留空间。不同证件的要求各异，这些参数不代表自动通过所有证件的照片审核。
+- **大图自动处理**：超过 **2400 万像素** 的照片会等比例缩小到处理预算内，保留完整画面并应用 EXIF 方向信息；较小照片保持原尺寸。单个上传文件上限仍为 **40 MB**。
+- **多架构 Docker 镜像**：[chilin11/hivisionid-x:latest](https://hub.docker.com/r/chilin11/hivisionid-x/tags) 支持 `linux/amd64`（x86_64）和 `linux/arm64`，Docker 会自动选择对应架构。
 - **[NEW] Native High-Resolution Pipeline (原生高清裁剪与抠图)**: 彻底移除了原有代码对高清大图的暴力压缩限制（2000px/600px）。现在上传超高清照片，生成的排版照与证件照将保留最高原生分辨率，完美解决6寸打印模糊痛点！
 - **[NEW] 智能设备硬件加速检测 (Auto Device Acceleration)**: 新增统一的设备管理模块。代码能够自动检测并使用最佳的推理硬件：支持 `Mac MPS/CoreML`、`Intel/AMD OpenVINO`、`Nvidia CUDA` 以及 `CPU`，大幅度提升大模型推理速度。
 - **[NEW] 核心代码深度模块化 (Modular Architecture)**: 重构了人像抠图（Matting）与美颜（Beauty）代码为注册器（Registry）模式，移除落后的 `modnet` 模型，默认配置更高清的 `BirefNet-v1` 和 `RMBG-1.4`，未来接入新模型只需几行代码。
@@ -120,8 +123,8 @@ HivisionIDPhoto 旨在开发一种实用、系统性的证件照智能制作算�
 ## 1. 克隆项目
 
 ```bash
-git clone https://github.com/Zeyi-Lin/HivisionIDPhotos.git
-cd  HivisionIDPhotos
+git clone https://github.com/chilin11/HivisionID-X.git
+cd HivisionID-X
 ```
 
 ## 2. 安装依赖环境
@@ -129,8 +132,12 @@ cd  HivisionIDPhotos
 > 建议 conda 创建一个 python3.10 虚拟环境后，执行以下命令
 
 ```bash
-pip install -r requirements.txt
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
 ```
+
+以上激活命令适用于 macOS/Linux；Windows 使用 `venv\Scripts\activate`。以后启动时先激活此环境，再执行 `python deploy_api.py`。
 
 ## 3. 下载人像抠图模型权重文件
 
@@ -283,7 +290,7 @@ python deploy_api.py
 **方式一：拉取最新镜像：**
 
 ```bash
-docker pull linzeyi/hivision_idphotos
+docker pull chilin11/hivisionid-x:latest
 ```
 
 **方式二：Dockrfile 直接构建镜像：**
@@ -291,7 +298,7 @@ docker pull linzeyi/hivision_idphotos
 在确保将至少一个[抠图模型权重文件](#3-下载权重文件)放到`hivision/creator/weights`下后，在项目根目录执行：
 
 ```bash
-docker build -t linzeyi/hivision_idphotos .
+docker build -t chilin11/hivisionid-x:latest .
 ```
 
 **方式三：Docker compose 构建：**
@@ -309,13 +316,27 @@ docker compose build
 运行下面的命令，在你的本地访问 [http://127.0.0.1:7860](http://127.0.0.1:7860/) 即可使用 Web UI 和 API。
 
 ```bash
-docker run -d -p 7860:7860 linzeyi/hivision_idphotos
+docker run -d --name hivisionid-x -p 7860:7860 chilin11/hivisionid-x:latest
 ```
 
 **使用 Docker Compose 启动**
 
 ```bash
-docker compose up -d
+docker compose pull
+docker compose up -d --no-build
+```
+
+更新已有 Docker Compose 部署（仅重启容器不会拉取新镜像）：
+
+```bash
+docker compose pull
+docker compose up -d --no-build --force-recreate
+```
+
+本地修改代码后，请重启 Python 服务并刷新页面。回归测试：
+
+```bash
+python -m unittest discover -s test -p 'test_*.py'
 ```
 
 ## 环境变量
