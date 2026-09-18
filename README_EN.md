@@ -1,483 +1,176 @@
-<div align="center">
+# HivisionID-X
 
-<img alt="hivision_logo" src="assets/hivision_logo.png" width=120 height=120>
-<h1>HivisionIDPhoto</h1>
+A self-hosted ID photo workspace: upload a portrait, adjust framing and background, and download standard photos, high-resolution images, and print layouts.
 
-English / [中文](README.md) / [日本語](README_JP.md) / [한국어](README_KO.md)
+[中文](README.md) · **English** · [Docker Hub](https://hub.docker.com/r/chilin11/hivisionid-x) · [Report an issue](https://github.com/chilin11/HivisionID-X/issues)
 
-[![][release-shield]][release-link]
-[![][dockerhub-shield]][dockerhub-link]
-[![][github-stars-shield]][github-stars-link]
-[![][github-issues-shield]][github-issues-link]
-[![][github-contributors-shield]][github-contributors-link]
-[![][github-forks-shield]][github-forks-link]
-[![][license-shield]][license-link]  
-[![][wechat-shield]][wechat-link]
-[![][spaces-shield]][spaces-link]
-[![][swanhub-demo-shield]][swanhub-demo-link]
-[![][modelscope-shield]][modelscope-link]
-[![][modelers-shield]][modelers-link]
-[![][compshare-shield]][compshare-link]
+> **Forked from [Zeyi-Lin/HivisionIDPhotos](https://github.com/Zeyi-Lin/HivisionIDPhotos)** and developed further by [chilin11](https://github.com/chilin11). HivisionID-X reworks the web workspace, API service, and smart framing pipeline while building on the upstream photo-processing core and open-source models.
 
-[![][trendshift-shield]][trendshift-link]
-[![][hellogithub-shield]][hellogithub-link]
+![Current HivisionID-X English workspace](assets/studio-desktop-en.png)
 
-<img src="assets/demoImage.jpg" width=900>
+*Actual screenshot of the current workspace before uploading a photo.*
 
-</div>
+<details>
+<summary>Mobile view (Chinese interface)</summary>
 
-<br>
+<img src="assets/studio-mobile.png" alt="HivisionID-X mobile interface" width="300">
 
-> **Related Projects**：
->
-> - [SwanLab](https://github.com/SwanHubX/SwanLab): Used throughout the training of the portrait matting model for analysis and monitoring, as well as collaboration with lab colleagues, significantly improving training efficiency.
+</details>
 
-<br>
+## Features
 
-# Table of Contents
+- **Photo workspace:** drag and drop, file selection, clipboard paste, Chinese/English switching, and responsive desktop/mobile layouts.
+- **Smart framing:** default head height of **59%**, adjustable from **50% to 69%** in the UI. When source space permits, headroom stays within **10%–12%**. Bottom alignment no longer zooms in unnecessarily, preserving room for the neck and shoulders.
+- **Large-photo handling:** files up to **40 MB**; images above **24 megapixels** are resized proportionally without cropping. Smaller images keep their dimensions; EXIF orientation is applied.
+- **Matting and backgrounds:** BEN2 + RetinaFace by default, selectable models, solid/gradient/custom backgrounds.
+- **Sizes and downloads:** presets, custom pixels or millimeters, separate standard and high-resolution outputs, PNG/JPEG, DPI, target KB, and watermarks.
+- **Print layouts:** 5/6-inch, A4, 3R, and 4R sheets with optional cutting guides.
+- **Optional adjustments:** brightness, contrast, saturation, whitening, sharpening, face alignment, horizontal flip, and AI super-resolution.
+- **Self-hosting and API:** FastAPI serves the interface and endpoints; Docker supports `linux/amd64` (x86_64) and `linux/arm64`.
 
-- [Recent Updates](#-recent-updates)
-- [Project Overview](#-project-overview)
-- [Community](#-community)
-- [Preparation](#-preparation)
-- [Web UI Startup](#-start-web-ui)
-- [Python Inference](#-python-inference)
-- [API Service Deployment](#️-deploy-api-service)
-- [Docker Deployment](#-docker-deployment)
-- [Contact Us](#-contact-us)
-- [Q&A](#qa)
-- [Contributors](#contributors)
-- [Thanks for support](#thanks-for-support)
-- [License](#lincese)
+## Quick start with Docker
 
-<br>
-
-# 🤩 Recent Updates
-
-- Online Experience: [![SwanHub Demo](https://img.shields.io/static/v1?label=Demo&message=SwanHub%20Demo&color=blue)](https://swanhub.co/ZeYiLin/HivisionIDPhotos/demo)、[![Spaces](https://img.shields.io/badge/🤗-Open%20in%20Spaces-blue)](https://huggingface.co/spaces/TheEeeeLin/HivisionIDPhotos)、[![][modelscope-shield]][modelscope-link]、[![][compshare-shield]][compshare-link]
-
-- 2024.11.20: Web UI adds **Print Layout** option, supports six-inch, five-inch, A4, 3R, and 4R layout sizes
-- 2024.11.16: API interface adds beauty effect parameter
-- 2024.09.24: API interface adds base64 image input option | Web UI adds **Layout Photo Cropping Lines** feature
-- 2024.09.22: Web UI adds **Beast Mode** and **DPI** parameter
-- 2024.09.18: Web UI adds **Share Template Photos** feature and **American Style** background option
-- 2024.09.17: Web UI adds **Custom Background Color-HEX Input** feature | **(Community Contribution) C++ Version** - [HivisionIDPhotos-cpp](https://github.com/zjkhahah/HivisionIDPhotos-cpp) contributed by [zjkhahah](https://github.com/zjkhahah)
-- 2024.09.16: Web UI adds **Face Rotation Alignment** feature, custom size input supports **millimeters**
-- 2024.09.14: Web UI adds **Custom DPI** feature, adds Japanese and Korean support, adds **Adjust Brightness, Contrast, Sharpness** feature
-
-<br>
-
-# Project Overview
-
-> 🚀 Thank you for your interest in our work. You may also want to check out our other achievements in the field of image processing, feel free to reach out: zeyi.lin@swanhub.co.
-
-HivisionIDPhoto aims to develop a practical and systematic intelligent algorithm for producing ID photos.
-
-It utilizes a comprehensive AI model workflow to recognize various user photo-taking scenarios, perform matting, and generate ID photos.
-
-**HivisionIDPhoto can achieve:**
-
-1. Lightweight matting (purely offline, fast inference with **CPU** only)
-2. Generate standard ID photos and six-inch layout photos based on different size specifications
-3. Support pure offline or edge-cloud inference
-4. Beauty effects (waiting)
-5. Intelligent formal wear change (waiting)
-
-<div align="center">
-<img src="assets/demo.png" width=900>
-</div>
-
----
-
-If HivisionIDPhoto helps you, please star this repo or recommend it to your friends to solve the urgent ID photo production problem!
-
-<br>
-
-# 🏠 Community
-
-We have shared some interesting applications and extensions of HivisionIDPhotos built by the community:
-
-- [HivisionIDPhotos-ComfyUI](https://github.com/AIFSH/HivisionIDPhotos-ComfyUI): ComfyUI ID photo processing workflow built by [AIFSH](https://github.com/AIFSH/HivisionIDPhotos-ComfyUI) 
-
-[<img src="assets/comfyui.png" width="900" alt="ComfyUI workflow">](https://github.com/AIFSH/HivisionIDPhotos-ComfyUI)
-
-- [HivisionIDPhotos-wechat-weapp](https://github.com/no1xuan/HivisionIDPhotos-wechat-weapp): WeChat ID photo mini program, powered by the HivisionIDphotos algorithm, contributed by [no1xuan](https://github.com/no1xuan)
-
-[<img src="assets/community-wechat-miniprogram.png" width="900" alt="HivisionIDPhotos-wechat-weapp">](https://github.com/no1xuan/HivisionIDPhotos-wechat-weapp)
-
-- [HivisionIDPhotos-Uniapp](https://github.com/soulerror/HivisionIDPhotos-Uniapp): Front-end of WeChat ID photo mini program based on uniapp, powered by the HivisionIDphotos algorithm, contributed by [soulerror](https://github.com/soulerror)
-
-[<img src="assets/community-uniapp-wechat-miniprogram.png" width="900" alt="HivisionIDPhotos-uniapp">](https://github.com/soulerror/HivisionIDPhotos-Uniapp)
-
-- [HivisionIDPhotos-cpp](https://github.com/zjkhahah/HivisionIDPhotos-cpp): C++ version of HivisionIDphotos, built by [zjkhahah](https://github.com/zjkhahah)
-- [HivisionIDPhotos-windows-GUI](https://github.com/zhaoyun0071/HivisionIDPhotos-windows-GUI): Windows client application built by [zhaoyun0071](https://github.com/zhaoyun0071)
-- [HivisionIDPhotos-NAS](https://github.com/ONG-Leo/HivisionIDPhotos-NAS): Chinese tutorial for Synology NAS deployment, contributed by [ONG-Leo](https://github.com/ONG-Leo)
-
-<br>
-
-# 🔧 Preparation
-
-The current version defaults to **59% head height** (hair top to chin), with a **50%–69%** adjustment range. When the source image allows it, top headroom stays within **10%–12%**. Framing no longer enlarges the head just to align the body with the bottom edge, leaving more room for the neck and shoulders. Requirements vary by document; these settings do not guarantee acceptance for every use.
-
-Photos above **24 megapixels** are automatically resized proportionally before processing, without cropping the frame. EXIF orientation is applied and smaller photos keep their original dimensions. The upload file limit remains **40 MB**.
-
-The published [chilin11/hivisionid-x:latest image](https://hub.docker.com/r/chilin11/hivisionid-x/tags) supports **linux/amd64 (x86_64)** and **linux/arm64**; Docker selects the matching platform automatically.
-
-Environment installation and dependencies:
-- Python >= 3.7 (project primarily tested on Python 3.10)
-- OS: Linux, Windows, MacOS
-
-## 1. Clone the Project
-
-```bash
-git clone https://github.com/chilin11/HivisionID-X.git
-cd HivisionID-X
-```
-
-## 2. Install Dependency Environment
-
-> It is recommended to create a python3.10 virtual environment using conda, then execute the following commands
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-python -m pip install -r requirements.txt
-```
-
-On Windows, activate with `venv\Scripts\activate`. Activate the environment before running `python deploy_api.py`.
-
-## 3. Download Weight Files
-
-**Method 1: Script Download**
-
-```bash
-python scripts/download_model.py --models all
-```
-
-**Method 2: Direct Download**
-
-Store in the project's `hivision/creator/weights` directory:
-- `modnet_photographic_portrait_matting.onnx` (24.7MB): Official weights of [MODNet](https://github.com/ZHKKKe/MODNet), [download](https://github.com/Zeyi-Lin/HivisionIDPhotos/releases/download/pretrained-model/modnet_photographic_portrait_matting.onnx)
-- `hivision_modnet.onnx` (24.7MB): Matting model with better adaptability for pure color background replacement, [download](https://github.com/Zeyi-Lin/HivisionIDPhotos/releases/download/pretrained-model/hivision_modnet.onnx)
-- `rmbg-1.4.onnx` (176.2MB): Open-source matting model from [BRIA AI](https://huggingface.co/briaai/RMBG-1.4), [download](https://huggingface.co/briaai/RMBG-1.4/resolve/main/onnx/model.onnx?download=true) and rename to `rmbg-1.4.onnx`
-- `birefnet-v1-lite.onnx`(224MB): Open-source matting model from [ZhengPeng7](https://github.com/ZhengPeng7/BiRefNet), [download](https://github.com/ZhengPeng7/BiRefNet/releases/download/v1/BiRefNet-general-bb_swin_v1_tiny-epoch_232.onnx) and rename to `birefnet-v1-lite.onnx`
-
-## 4. Face Detection Model Configuration (Optional)
-
-| Extended Face Detection Model | Description | Documentation |
-| -- | -- | -- |
-| MTCNN | **Offline** face detection model, high-performance CPU inference, default model, lower detection accuracy | Use it directly after cloning this project |
-| RetinaFace | **Offline** face detection model, moderate CPU inference speed (in seconds), and high accuracy | [Download](https://github.com/Zeyi-Lin/HivisionIDPhotos/releases/download/pretrained-model/retinaface-resnet50.onnx) and place it in the `hivision/creator/retinaface/weights` directory |
-| Face++ | Online face detection API launched by Megvii, higher detection accuracy, [official documentation](https://console.faceplusplus.com.cn/documents/4888373) | [Usage Documentation](docs/face++_EN.md)|
-
-## 5. Performance Reference
-
-> Test environment: Mac M1 Max 64GB, non-GPU acceleration, test image resolution: 512x715(1) and 764×1146(2).
-
-| Model Combination | Memory Occupation | Inference Time (1) | Inference Time (2) |
-| -- | -- | -- | -- |
-| MODNet + mtcnn | 410MB | 0.207s | 0.246s |
-| MODNet + retinaface | 405MB | 0.571s | 0.971s |
-| birefnet-v1-lite + retinaface | 6.20GB | 7.063s | 7.128s |
-
-## 6. GPU Inference Acceleration (Optional)
-
-In the current version, the model that can be accelerated by NVIDIA GPUs is `birefnet-v1-lite`, and please ensure you have around 16GB of VRAM.
-
-If you want to use NVIDIA GPU acceleration for inference, after ensuring you have installed CUDA and cuDNN, find the corresponding `onnxruntime-gpu` version to install according to the [onnxruntime-gpu documentation](https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#cuda-12x), and find the corresponding `pytorch` version to install according to the [pytorch official website](https://pytorch.org/get-started/locally/).
-
-```bash
-# If your computer is installed with CUDA 12.x and cuDNN 8
-# Installing torch is optional. If you can't configure cuDNN, try installing torch
-pip install onnxruntime-gpu==1.18.0
-pip install torch --index-url https://download.pytorch.org/whl/cu121
-```
-
-After completing the installation, call the `birefnet-v1-lite` model to utilize GPU acceleration for inference.
-
-> TIP: CUDA installations are backward compatible. For example, if your CUDA version is 12.6 but the highest version currently matched by torch is 12.4, it's still possible to install version 12.4 on your computer.
-<br>
-
-# 🚀 Start Web UI
-
-```bash
-python deploy_api.py
-```
-
-Running the command will start a FastAPI server with a Web UI. Access [http://127.0.0.1:7860](http://127.0.0.1:7860) in your browser to interact with ID photos.
-
-<br>
-
-# 🚀 Python Inference
-
-Core parameters:
-
-- `-i`: Input image path
-- `-o`: Output image path
-- `-t`: Inference type, options are idphoto, human_matting, add_background, generate_layout_photos
-- `--matting_model`: Portrait matting model weight selection
-- `--face_detect_model`: Face detection model selection
-
-More parameters can be viewed by running `python inference.py --help`
-
-## 1. ID Photo Creation
-
-Input 1 photo to obtain 1 standard ID photo and 1 high-definition ID photo in 4-channel transparent PNG.
-
-```python
-python inference.py -i demo/images/test0.jpg -o ./idphoto.png --height 413 --width 295
-```
-
-## 2. Portrait Matting
-
-Input 1 photo to obtain 1 4-channel transparent PNG.
-
-```python
-python inference.py -t human_matting -i demo/images/test0.jpg -o ./idphoto_matting.png --matting_model hivision_modnet
-```
-
-## 3. Add Background Color to Transparent Image
-
-Input 1 4-channel transparent PNG to obtain 1 3-channel image with added background color.
-
-```python
-python inference.py -t add_background -i ./idphoto.png -o ./idphoto_ab.jpg -c 4f83ce -k 30 -r 1
-```
-
-## 4. Generate Six-Inch Layout Photo
-
-Input 1 3-channel photo to obtain 1 six-inch layout photo.
-
-```python
-python inference.py -t generate_layout_photos -i ./idphoto_ab.jpg -o ./idphoto_layout.jpg --height 413 --width 295 -k 200
-```
-
-## 5. ID Photo Cropping
-
-Input 1 4-channel photo (the image after matting) to obtain 1 standard ID photo and 1 high-definition ID photo in 4-channel transparent PNG.
-
-```python
-python inference.py -t idphoto_crop -i ./idphoto_matting.png -o ./idphoto_crop.png --height 413 --width 295
-```
-
-<br>
-
-# ⚡️ Deploy API Service
-
-## Start Backend
-
-```
-python deploy_api.py
-```
-
-## Request API Service
-
-For detailed request methods, please refer to the [API Documentation](docs/api_EN.md), which includes the following request examples:
-- [cURL](docs/api_EN.md#curl-request-examples)
-- [Python](docs/api_EN.md#python-request-example)
-
-<br>
-
-# 🐳 Docker Deployment
-
-## 1. Pull or Build Image
-
-> Choose one of the following methods
-
-**Method 1: Pull the latest image:**
+The published image includes model weights. Docker selects the matching architecture automatically; no separate Python setup or frontend build is required.
 
 ```bash
 docker pull chilin11/hivisionid-x:latest
+docker run -d \
+  --name hivisionid-x \
+  --restart unless-stopped \
+  -p 7860:7860 \
+  chilin11/hivisionid-x:latest
 ```
 
-**Method 2: Directly build the image from Dockerfile:**
+Open **[http://localhost:7860](http://localhost:7860)**.
 
-After ensuring that at least one [matting model weight file](#3-download-weight-files) is placed in the `hivision/creator/weights` directory, execute the following in the project root directory:
+### Docker Compose
 
-```bash
-docker build -t chilin11/hivisionid-x:latest .
+Create `compose.yaml`:
+
+```yaml
+services:
+  hivisionid-x:
+    image: chilin11/hivisionid-x:latest
+    restart: unless-stopped
+    ports:
+      - "7860:7860"
 ```
 
-**Method 3: Build using Docker Compose:**
-
-After ensuring that at least one [matting model weight file](#3-download-weight-files) is placed in the `hivision/creator/weights` directory, execute the following in the project root directory:
-
-```bash
-docker compose build
-```
-
-## 2. Run Services
-
-**Start Service**
-
-Run the following command, and you can access the Web UI and API locally at [http://127.0.0.1:7860](http://127.0.0.1:7860/).
-
-```bash
-docker run -d --name hivisionid-x -p 7860:7860 chilin11/hivisionid-x:latest
-```
-
-**Start with Docker Compose**
-
-```bash
-docker compose pull
-docker compose up -d --no-build
-```
-
-To update an existing Compose deployment (restarting alone does not pull a new image):
+Start or update the service:
 
 ```bash
 docker compose pull
 docker compose up -d --no-build --force-recreate
 ```
 
-After local code changes, restart the Python service and refresh the page. Run the regression tests with:
+**Restarting a container alone does not update its image.** Pull first, then recreate it. The repository's `docker-compose.yml` also supports local builds; use `--no-build` when deploying the published image.
+
+```bash
+docker compose logs --tail=100
+curl http://localhost:7860/health
+```
+
+## Make a photo
+
+1. Upload a clear, front-facing portrait with the full hairline, both shoulders, and upper chest.
+2. Choose the size and background, then adjust framing and output settings.
+3. Click the generate button and inspect the result. Framing sliders can reuse the matting result for another crop.
+4. Download the standard photo, high-resolution photo, or print layout separately.
+
+The 59% default is a framing preference. Presets primarily select output dimensions; **they do not validate every document requirement**. Check the receiving authority's background, head-size, eye-position, and file requirements. Cropping cannot recover shoulders missing from the source, and AI enhancement does not guarantee recovery of real detail.
+
+## Local development
+
+Docker uses Python 3.10. For local use, choose Python 3.10 or a newer version compatible with the dependencies.
+
+```bash
+git clone https://github.com/chilin11/HivisionID-X.git
+cd HivisionID-X
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+On Windows, activate with `venv\Scripts\activate`.
+
+### Model weights
+
+Weights are not tracked in Git. Download the default models to these locations:
+
+| Purpose | File location | Download |
+| --- | --- | --- |
+| BEN2 matting | `hivision/creator/weights/BEN2_Base.onnx` | [BEN2 ONNX](https://huggingface.co/PramaLLC/BEN2/resolve/main/BEN2_Base.onnx) |
+| RetinaFace detection | `hivision/creator/retinaface/weights/retinaface-resnet50.onnx` | [Upstream weights](https://github.com/Zeyi-Lin/HivisionIDPhotos/releases/download/pretrained-model/retinaface-resnet50.onnx) |
+
+BEN2 attempts a network download if missing. Preparing it beforehand avoids waiting on the first request. Make sure the saved filenames match the table. Super-resolution weights are optional; see [server/super_res.py](server/super_res.py).
+
+### Run
+
+```bash
+python deploy_api.py
+```
+
+Open [http://127.0.0.1:7860](http://127.0.0.1:7860). On macOS/Linux, use `PORT=7861 python deploy_api.py` for a different port. Press `Ctrl+C` to stop.
+
+The backend serves `web-ui/dist/` directly; no npm build is needed. Restart after Python changes and refresh the browser after UI changes.
+
+## API
+
+Open **[/docs](http://localhost:7860/docs)** on the running service for interactive parameter and response documentation.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/health` | Service status and super-resolution availability |
+| POST | `/idphoto` | Matting, smart framing, optional background, and photo output |
+| POST | `/idphoto_crop` | Smart crop output |
+| POST | `/human_matting` | Portrait matting |
+| POST | `/add_background` | Background compositing |
+| POST | `/generate_layout_photos` | Print layouts |
+| POST | `/watermark` | Watermarking |
+| POST | `/set_kb` | File-size adjustment |
+
+Example: a 295 × 413 pixel photo with a blue background. The response is JSON containing Base64 images.
+
+```bash
+curl -X POST http://localhost:7860/idphoto \
+  -F "input_image=@portrait.jpg" \
+  -F "height=413" \
+  -F "width=295" \
+  -F "head_height_fraction=0.59" \
+  -F "color=438edb"
+```
+
+## Repository and validation
+
+```text
+deploy_api.py          Service entry point
+server/                FastAPI, framing, encoding, caching, enhancement
+hivision/              Upstream-derived photo-processing core and extensions
+web-ui/dist/           Studio interface and styles
+scripts/               Model downloads and utilities
+test/                  Framing, decoding, and interface regressions
+assets/                Screenshots and project assets
+```
+
+Run decoding and framing regressions without loading inference models:
 
 ```bash
 python -m unittest discover -s test -p 'test_*.py'
 ```
 
-## Environment Variables
+`test/studio_ui.cjs` tests interface interactions with mocked API responses and requires Node.js, Playwright, and its Chromium browser.
 
-This project provides some additional configuration options, which can be set using environment variables:
+Prepare model files before building your own Docker image. To publish both architectures:
 
-| Environment Variable | Type | Description | Example |
-|--|--|--|--|
-| FACE_PLUS_API_KEY | Optional | This is your API key obtained from the Face++ console | `7-fZStDJ····` |
-| FACE_PLUS_API_SECRET | Optional | Secret corresponding to the Face++ API key | `VTee824E····` |
-| RUN_MODE | Optional | Running mode, with the option of `beast` (beast mode). In beast mode, the face detection and matting models will not release memory, achieving faster secondary inference speeds. It is recommended to try to have at least 16GB of memory. | `beast` |
-
-Example of using environment variables in Docker:
 ```bash
-docker run  -d -p 7860:7860 \
-    -e FACE_PLUS_API_KEY=7-fZStDJ···· \
-    -e FACE_PLUS_API_SECRET=VTee824E···· \
-    -e RUN_MODE=beast \
-    linzeyi/hivision_idphotos 
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t YOUR_DOCKERHUB_USER/hivisionid-x:latest --push .
 ```
 
-<br>
+## Origin, credits, and license
 
-# 📖 Cite Projects
+HivisionID-X is a derivative of [HivisionIDPhotos](https://github.com/Zeyi-Lin/HivisionIDPhotos), not an official upstream release. Thanks to **Zeyi Lin, the SwanLab Team, and upstream contributors** for the foundation, and to the BEN2, BiRefNet, MODNet, RetinaFace, Real-ESRGAN, and ONNX Runtime projects.
 
-1. MTCNN:
+Repository code is licensed under [Apache License 2.0](LICENSE). Model weights remain subject to their respective projects' licenses.
 
-```bibtex
-@software{ipazc_mtcnn_2021,
-    author = {ipazc},
-    title = {{MTCNN}},
-    url = {https://github.com/ipazc/mtcnn},
-    year = {2021},
-    publisher = {GitHub}
-}
-```
-
-2. ModNet:
-
-```bibtex
-@software{zhkkke_modnet_2021,
-    author = {ZHKKKe},
-    title = {{ModNet}},
-    url = {https://github.com/ZHKKKe/MODNet},
-    year = {2021},
-    publisher = {GitHub}
-}
-```
-
-<br>
-
-# Q&A
-
-## 1. How to modify preset sizes and colors?
-
-The preset sizes and colors in the Web UI are defined in the frontend code. You can modify them in `web-ui/dist/index.html`.
-
-## 2. How to Change the Watermark Font?
-
-1. Place the font file in the `hivision/plugin/font` folder.
-2. Change the `font_file` parameter value in `hivision/plugin/watermark.py` to the name of the font file.
-
-## 3. How to Add Social Media Template Photos?
-
-1. Place the template image in the `hivision/plugin/template/assets` folder. The template image should be a 4-channel transparent PNG.
-2. Add the latest template information to the `hivision/plugin/template/assets/template_config.json` file. Here, `width` is the template image width (px), `height` is the template image height (px), `anchor_points` are the coordinates (px) of the four corners of the transparent area in the template; `rotation` is the rotation angle of the transparent area relative to the vertical direction, where >0 is counterclockwise and <0 is clockwise.
-3. Add the template option in `web-ui/dist/index.html`.
-
-<img src="assets/social_template.png" width="500">
-
-<br>
-
-# 📧 Contact Us
-
-If you have any questions, please email zeyi.lin@swanhub.co
-
-<br>
-
-# Contributors
-
-<a href="https://github.com/Zeyi-Lin/HivisionIDPhotos/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Zeyi-Lin/HivisionIDPhotos" />
-</a>
-
-[Zeyi-Lin](https://github.com/Zeyi-Lin)、[SAKURA-CAT](https://github.com/SAKURA-CAT)、[Feudalman](https://github.com/Feudalman)、[swpfY](https://github.com/swpfY)、[Kaikaikaifang](https://github.com/Kaikaikaifang)、[ShaohonChen](https://github.com/ShaohonChen)、[KashiwaByte](https://github.com/KashiwaByte)
-
-<br>
-
-# Thanks for support
-
-[![Stargazers repo roster for @Zeyi-Lin/HivisionIDPhotos](https://reporoster.com/stars/Zeyi-Lin/HivisionIDPhotos)](https://github.com/Zeyi-Lin/HivisionIDPhotos/stargazers)
-
-[![Forkers repo roster for @Zeyi-Lin/HivisionIDPhotos](https://reporoster.com/forks/Zeyi-Lin/HivisionIDPhotos)](https://github.com/Zeyi-Lin/HivisionIDPhotos/network/members)
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Zeyi-Lin/HivisionIDPhotos&type=Date)](https://star-history.com/#Zeyi-Lin/HivisionIDPhotos&Date)
-
-# Lincese
-
-This repository is licensed under the [Apache-2.0 License](LICENSE).
-
-[github-stars-shield]: https://img.shields.io/github/stars/zeyi-lin/hivisionidphotos?color=ffcb47&labelColor=black&style=flat-square
-[github-stars-link]: https://github.com/zeyi-lin/hivisionidphotos/stargazers
-
-[swanhub-demo-shield]: https://swanhub.co/git/repo/SwanHub%2FAuto-README/file/preview?ref=main&path=swanhub.svg
-[swanhub-demo-link]: https://swanhub.co/ZeYiLin/HivisionIDPhotos/demo
-
-[spaces-shield]: https://img.shields.io/badge/🤗-Open%20in%20Spaces-blue
-[spaces-link]: https://huggingface.co/spaces/TheEeeeLin/HivisionIDPhotos
-
-<!-- WeChat group link -->
-[wechat-shield]: https://img.shields.io/badge/WeChat-微信-4cb55e
-[wechat-link]: https://docs.qq.com/doc/DUkpBdk90eWZFS2JW
-
-<!-- Github Release -->
-[release-shield]: https://img.shields.io/github/v/release/zeyi-lin/hivisionidphotos?color=369eff&labelColor=black&logo=github&style=flat-square
-[release-link]: https://github.com/zeyi-lin/hivisionidphotos/releases
-
-[license-shield]: https://img.shields.io/badge/license-apache%202.0-white?labelColor=black&style=flat-square
-[license-link]: https://github.com/Zeyi-Lin/HivisionIDPhotos/blob/master/LICENSE
-
-[github-issues-shield]: https://img.shields.io/github/issues/zeyi-lin/hivisionidphotos?color=ff80eb&labelColor=black&style=flat-square
-[github-issues-link]: https://github.com/zeyi-lin/hivisionidphotos/issues
-
-[dockerhub-shield]: https://img.shields.io/docker/v/linzeyi/hivision_idphotos?color=369eff&label=docker&labelColor=black&logoColor=white&style=flat-square
-[dockerhub-link]: https://hub.docker.com/r/linzeyi/hivision_idphotos/tags
-
-[trendshift-shield]: https://trendshift.io/api/badge/repositories/11622
-[trendshift-link]: https://trendshift.io/repositories/11622
-
-[hellogithub-shield]: https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=8ea1457289fb4062ba661e5299e733d6&claim_uid=Oh5UaGjfrblg0yZ
-[hellogithub-link]: https://hellogithub.com/repository/8ea1457289fb4062ba661e5299e733d6
-
-[github-contributors-shield]: https://img.shields.io/github/contributors/zeyi-lin/hivisionidphotos?color=c4f042&labelColor=black&style=flat-square
-[github-contributors-link]: https://github.com/zeyi-lin/hivisionidphotos/graphs/contributors
-
-[github-forks-shield]: https://img.shields.io/github/forks/zeyi-lin/hivisionidphotos?color=8ae8ff&labelColor=black&style=flat-square
-[github-forks-link]: https://github.com/zeyi-lin/hivisionidphotos/network/members
-
-[modelscope-shield]: https://img.shields.io/badge/Demo_on_ModelScope-purple?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjIzIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KCiA8Zz4KICA8dGl0bGU+TGF5ZXIgMTwvdGl0bGU+CiAgPHBhdGggaWQ9InN2Z18xNCIgZmlsbD0iIzYyNGFmZiIgZD0ibTAsODkuODRsMjUuNjUsMGwwLDI1LjY0OTk5bC0yNS42NSwwbDAsLTI1LjY0OTk5eiIvPgogIDxwYXRoIGlkPSJzdmdfMTUiIGZpbGw9IiM2MjRhZmYiIGQ9Im05OS4xNCwxMTUuNDlsMjUuNjUsMGwwLDI1LjY1bC0yNS42NSwwbDAsLTI1LjY1eiIvPgogIDxwYXRoIGlkPSJzdmdfMTYiIGZpbGw9IiM2MjRhZmYiIGQ9Im0xNzYuMDksMTQxLjE0bC0yNS42NDk5OSwwbDAsMjIuMTlsNDcuODQsMGwwLC00Ny44NGwtMjIuMTksMGwwLDI1LjY1eiIvPgogIDxwYXRoIGlkPSJzdmdfMTciIGZpbGw9IiMzNmNmZDEiIGQ9Im0xMjQuNzksODkuODRsMjUuNjUsMGwwLDI1LjY0OTk5bC0yNS42NSwwbDAsLTI1LjY0OTk5eiIvPgogIDxwYXRoIGlkPSJzdmdfMTgiIGZpbGw9IiMzNmNmZDEiIGQ9Im0wLDY0LjE5bDI1LjY1LDBsMCwyNS42NWwtMjUuNjUsMGwwLC0yNS42NXoiLz4KICA8cGF0aCBpZD0ic3ZnXzE5IiBmaWxsPSIjNjI0YWZmIiBkPSJtMTk4LjI4LDg5Ljg0bDI1LjY0OTk5LDBsMCwyNS42NDk5OWwtMjUuNjQ5OTksMGwwLC0yNS42NDk5OXoiLz4KICA8cGF0aCBpZD0ic3ZnXzIwIiBmaWxsPSIjMzZjZmQxIiBkPSJtMTk4LjI4LDY0LjE5bDI1LjY0OTk5LDBsMCwyNS42NWwtMjUuNjQ5OTksMGwwLC0yNS42NXoiLz4KICA8cGF0aCBpZD0ic3ZnXzIxIiBmaWxsPSIjNjI0YWZmIiBkPSJtMTUwLjQ0LDQybDAsMjIuMTlsMjUuNjQ5OTksMGwwLDI1LjY1bDIyLjE5LDBsMCwtNDcuODRsLTQ3Ljg0LDB6Ii8+CiAgPHBhdGggaWQ9InN2Z18yMiIgZmlsbD0iIzM2Y2ZkMSIgZD0ibTczLjQ5LDg5Ljg0bDI1LjY1LDBsMCwyNS42NDk5OWwtMjUuNjUsMGwwLC0yNS42NDk5OXoiLz4KICA8cGF0aCBpZD0ic3ZnXzIzIiBmaWxsPSIjNjI0YWZmIiBkPSJtNDcuODQsNjQuMTlsMjUuNjUsMGwwLC0yMi4xOWwtNDcuODQsMGwwLDQ3Ljg0bDIyLjE5LDBsMCwtMjUuNjV6Ii8+CiAgPHBhdGggaWQ9InN2Z18yNCIgZmlsbD0iIzYyNGFmZiIgZD0ibTQ3Ljg0LDExNS40OWwtMjIuMTksMGwwLDQ3Ljg0bDQ3Ljg0LDBsMCwtMjIuMTlsLTI1LjY1LDBsMCwtMjUuNjV6Ii8+CiA8L2c+Cjwvc3ZnPg==&labelColor=white
-[modelscope-link]: https://modelscope.cn/studios/SwanLab/HivisionIDPhotos
-
-
-[modelers-shield]: https://img.shields.io/badge/Demo_on_Modelers-c42a2a?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCAxMjQgNjQiIGZpbGw9Im5vbmUiPgo8cGF0aCBkPSJNNDIuNzc4MyAwSDI2LjU5NzdWMTUuNzc4N0g0Mi43NzgzVjBaIiBmaWxsPSIjREUwNDI5Ii8+CjxwYXRoIGQ9Ik0xNi41MDg4IDQuMTc5MkgwLjMyODEyNVYxOS45NTc5SDE2LjUwODhWNC4xNzkyWiIgZmlsbD0iIzI0NDk5QyIvPgo8cGF0aCBkPSJNMTIzLjk1MiA0LjE3OTJIMTA3Ljc3MVYxOS45NTc5SDEyMy45NTJWNC4xNzkyWiIgZmlsbD0iIzI0NDk5QyIvPgo8cGF0aCBkPSJNMTYuNTA4OCA0NS40NjE5SDAuMzI4MTI1VjYxLjI0MDZIMTYuNTA4OFY0NS40NjE5WiIgZmlsbD0iIzI0NDk5QyIvPgo8cGF0aCBkPSJNMTIzLjk1MiA0NS40NjE5SDEwNy43NzFWNjEuMjQwNkgxMjMuOTUyVjQ1LjQ2MTlaIiBmaWxsPSIjMjQ0OTlDIi8+CjxwYXRoIGQ9Ik0zMi43MDggMTUuNzc4OEgxNi41MjczVjMxLjU1NzVIMzIuNzA4VjE1Ljc3ODhaIiBmaWxsPSIjREUwNDI5Ii8+CjxwYXRoIGQ9Ik01Mi44NDg2IDE1Ljc3ODhIMzYuNjY4VjMxLjU1NzVINTIuODQ4NlYxNS43Nzg4WiIgZmlsbD0iI0RFMDQyOSIvPgo8cGF0aCBkPSJNOTcuNzIzNyAwSDgxLjU0M1YxNS43Nzg3SDk3LjcyMzdWMFoiIGZpbGw9IiNERTA0MjkiLz4KPHBhdGggZD0iTTg3LjY1MzQgMTUuNzc4OEg3MS40NzI3VjMxLjU1NzVIODcuNjUzNFYxNS43Nzg4WiIgZmlsbD0iI0RFMDQyOSIvPgo8cGF0aCBkPSJNMTA3Ljc5NCAxNS43Nzg4SDkxLjYxMzNWMzEuNTU3NUgxMDcuNzk0VjE1Ljc3ODhaIiBmaWxsPSIjREUwNDI5Ii8+CjxwYXRoIGQ9Ik0yNC42NzQ4IDMxLjU1NzZIOC40OTQxNFY0Ny4zMzYzSDI0LjY3NDhWMzEuNTU3NloiIGZpbGw9IiNERTA0MjkiLz4KPHBhdGggZD0iTTYwLjg3OTkgMzEuNTU3Nkg0NC42OTkyVjQ3LjMzNjNINjAuODc5OVYzMS41NTc2WiIgZmlsbD0iI0RFMDQyOSIvPgo8cGF0aCBkPSJNNzkuNjIwMSAzMS41NTc2SDYzLjQzOTVWNDcuMzM2M0g3OS42MjAxVjMxLjU1NzZaIiBmaWxsPSIjREUwNDI5Ii8+CjxwYXRoIGQ9Ik0xMTUuODI1IDMxLjU1NzZIOTkuNjQ0NVY0Ny4zMzYzSDExNS44MjVWMzEuNTU3NloiIGZpbGw9IiNERTA0MjkiLz4KPHBhdGggZD0iTTcwLjI1NDkgNDcuMzM1OUg1NC4wNzQyVjYzLjExNDdINzAuMjU0OVY0Ny4zMzU5WiIgZmlsbD0iI0RFMDQyOSIvPgo8L3N2Zz4=&labelColor=white
-[modelers-link]: https://modelers.cn/spaces/SwanLab/HivisionIDPhotos
-
-[compshare-shield]: https://www-s.ucloud.cn/2025/02/dbef8b07ea3d316006d9c22765c3cd53_1740104342584.svg
-[compshare-link]: https://www.compshare.cn/images-detail?ImageID=compshareImage-17jacgm4ju16&ytag=HG_GPU_HivisionIDPhotos
+The legacy [Japanese](README_JP.md) and [Korean](README_KO.md) documents retain upstream content and have not been updated for the current Studio. Use this README or the [Chinese version](README.md) for current instructions.
