@@ -24,7 +24,7 @@ A self-hosted ID photo workspace: upload a portrait, adjust framing and backgrou
 - **Large-photo handling:** files up to **40 MB**; images above **24 megapixels** are resized proportionally without cropping. Smaller images keep their dimensions; EXIF orientation is applied.
 - **Matting and backgrounds:** BEN2 + RetinaFace by default, selectable models, solid/gradient/custom backgrounds.
 - **Sizes and downloads:** presets, custom pixels or millimeters, separate standard and high-resolution outputs, PNG/JPEG, DPI, target KB, and watermarks.
-- **Print layouts:** 5/6-inch, A4, 3R, and 4R sheets with optional cutting guides.
+- **Print layouts:** render the HD master directly to **600 DPI lossless PNG**, with 5/6-inch, A4, 3R, 4R sheets and optional cutting guides. Pixel dimensions and DPI increase together without changing physical paper or photo sizes.
 - **Optional adjustments:** brightness, contrast, saturation, whitening, sharpening, face alignment, horizontal flip, and AI super-resolution.
 - **Self-hosting and API:** FastAPI serves the interface and endpoints; Docker supports `linux/amd64` (x86_64) and `linux/arm64`.
 
@@ -78,6 +78,10 @@ curl http://localhost:7860/health
 4. Download the standard photo, high-resolution photo, or print layout separately.
 
 The 59% default is a framing preference. Presets primarily select output dimensions; **they do not validate every document requirement**. Check the receiving authority's background, head-size, eye-position, and file requirements. Cropping cannot recover shoulders missing from the source, and AI enhancement does not guarantee recovery of real detail.
+
+Choose matching paper and **100% / actual size**, not fit-to-page, when printing. The default six-inch layout is **3590×2410 pixels at 600 DPI**, independent of the submission file's KB limit. Actual detail still depends on the source and printer.
+
+Large-photo face detection uses a copy capped at 1024 pixels on its longest side and maps coordinates back to the HD source. Default mode releases detector sessions and reduces ONNX CPU allocator caching without capping CPU parallelism. Heavy matting models such as BEN2 and BiRefNet can still have high transient memory usage; these changes are not a hard process memory limit.
 
 ## Local development
 

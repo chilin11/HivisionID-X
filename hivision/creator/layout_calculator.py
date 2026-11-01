@@ -84,10 +84,6 @@ def generate_layout_array(input_height, input_width, LAYOUT_WIDTH=1795, LAYOUT_H
     LIMIT_BLOCK_W = LAYOUT_WIDTH - 2 * SIDES_INTERVAL_W
     LIMIT_BLOCK_H = LAYOUT_HEIGHT - 2 * SIDES_INTERVAL_H
 
-    # 2.创建一个 1180x1746 的空白画布
-    white_background = np.zeros([LAYOUT_HEIGHT, LAYOUT_WIDTH, 3], np.uint8)
-    white_background.fill(255)
-
     # 3.计算照片的 layout（列、行、横竖朝向）,证件照组成的中心区块的分辨率
     layout_mode, centerBlockWidth, centerBlockHeight = judge_layout(
         input_width,
@@ -117,95 +113,51 @@ def generate_layout_array(input_height, input_width, LAYOUT_WIDTH=1795, LAYOUT_H
 
 def generate_layout_image(
     input_image, typography_arr, typography_rotate, width=295, height=413,
-    crop_line:bool=False,
+    crop_line: bool = False,
     LAYOUT_WIDTH=1795,
     LAYOUT_HEIGHT=1205,
-    keep_original_size:bool=False,
+    keep_original_size: bool = False,
+    output_scale=None,
 ):
+    """Render directly from the source at the requested print resolution.
 
+    All geometry uses the same scale, including rotated photos, gutters and
+    crop lines. Never enlarge an already-rendered low-resolution sheet.
+    """
+    if min(width, height, LAYOUT_WIDTH, LAYOUT_HEIGHT) <= 0:
+        raise ValueError("Photo and layout dimensions must be positive")
     input_h, input_w = input_image.shape[:2]
+    if output_scale is None:
+        output_scale = min(input_w / width, input_h / height) if keep_original_size else 1.0
+    if not np.isfinite(output_scale) or output_scale <= 0:
+        raise ValueError("Layout scale must be positive and finite")
 
-    if keep_original_size and (input_h != height or input_w != width):
-        ratio_w = input_w / width
-        ratio_h = input_h / height
-        layout_w = int(LAYOUT_WIDTH * ratio_w)
-        layout_h = int(LAYOUT_HEIGHT * ratio_h)
-        white_background = np.zeros([layout_h, layout_w, 3], np.uint8)
-        white_background.fill(255)
-
-        scaled_arr = []
-        for x, y in typography_arr:
-            scaled_arr.append([int(x * ratio_w), int(y * ratio_h)])
-
-        if typography_rotate:
-            input_image = cv2.transpose(input_image)
-            input_image = cv2.flip(input_image, 0)
-            photo_w, photo_h = input_h, input_w
-        else:
-            photo_w, photo_h = input_w, input_h
-
-        for arr in scaled_arr:
-            locate_x, locate_y = arr[0], arr[1]
-            white_background[locate_y : locate_y + photo_h, locate_x : locate_x + photo_w] = (
-                input_image
-            )
-
-        if crop_line:
-            line_color = (200, 200, 200)
-            line_thickness = 1
-            vertical_lines = set()
-            horizontal_lines = set()
-
-            for x, y in scaled_arr:
-                vertical_lines.add(x)
-                vertical_lines.add(x + photo_w)
-                horizontal_lines.add(y)
-                horizontal_lines.add(y + photo_h)
-
-            for x in vertical_lines:
-                cv2.line(white_background, (x, 0), (x, layout_h), line_color, line_thickness)
-            for y in horizontal_lines:
-                cv2.line(white_background, (0, y), (layout_w, y), line_color, line_thickness)
-
-        return white_background
-
-    white_background = np.zeros([LAYOUT_HEIGHT, LAYOUT_WIDTH, 3], np.uint8)
-    white_background.fill(255)
-
-    if input_image.shape[0] != height:
-        input_image = cv2.resize(input_image, (width, height))
-
+    layout_w = max(1, round(LAYOUT_WIDTH * output_scale))
+    layout_h = max(1, round(LAYOUT_HEIGHT * output_scale))
+    photo_w = max(1, round(width * output_scale))
+    photo_h = max(1, round(height * output_scale))
+    if (input_w, input_h) != (photo_w, photo_h):
+        interpolation = cv2.INTER_AREA if photo_w <= input_w and photo_h <= input_h else cv2.INTER_LANCZOS4
+        input_image = cv2.resize(input_image, (photo_w, photo_h), interpolation=interpolation)
     if typography_rotate:
-        input_image = cv2.transpose(input_image)
-        input_image = cv2.flip(input_image, 0)
-        height, width = width, height
+        input_image = cv2.rotate(input_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        photo_w, photo_h = photo_h, photo_w
 
-    for arr in typography_arr:
-        locate_x, locate_y = arr[0], arr[1]
-        white_background[locate_y : locate_y + height, locate_x : locate_x + width] = (
-            input_image
-        )
+    scaled_arr = [(round(x * output_scale), round(y * output_scale)) for x, y in typography_arr]
+    white_background = np.full((layout_h, layout_w, 3), 255, dtype=np.uint8)
+    for x, y in scaled_arr:
+        if x < 0 or y < 0 or x + photo_w > layout_w or y + photo_h > layout_h:
+            raise ValueError("Photo does not fit on the selected paper")
+        white_background[y:y + photo_h, x:x + photo_w] = input_image
 
     if crop_line:
         line_color = (200, 200, 200)
-        line_thickness = 1
-        vertical_lines = []
-        horizontal_lines = []
-
-        for arr in typography_arr:
-            x, y = arr[0], arr[1]
-            if x not in vertical_lines:
-                vertical_lines.append(x)
-            if x + width not in vertical_lines:
-                vertical_lines.append(x + width)
-            if y not in horizontal_lines:
-                horizontal_lines.append(y)
-            if y + height not in horizontal_lines:
-                horizontal_lines.append(y + height)
-
+        line_thickness = max(1, round(output_scale))
+        vertical_lines = {edge for x, _ in scaled_arr for edge in (x, x + photo_w)}
+        horizontal_lines = {edge for _, y in scaled_arr for edge in (y, y + photo_h)}
         for x in vertical_lines:
-            cv2.line(white_background, (x, 0), (x, LAYOUT_HEIGHT), line_color, line_thickness)
+            cv2.line(white_background, (x, 0), (x, layout_h - 1), line_color, line_thickness)
         for y in horizontal_lines:
-            cv2.line(white_background, (0, y), (LAYOUT_WIDTH, y), line_color, line_thickness)
+            cv2.line(white_background, (0, y), (layout_w - 1, y), line_color, line_thickness)
 
     return white_background

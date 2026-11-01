@@ -49,6 +49,10 @@ vis_thres = 0.6
 
 from hivision.device import load_onnx_model
 
+# Face localization does not require a full-resolution print image. Bound
+# feature-map memory while keeping the caller's HD source untouched.
+MAX_DETECTION_SIDE = 1024
+
 
 def retinaface_detect_faces(image, model_path: str, sess=None):
     cfg = {
@@ -83,14 +87,23 @@ def retinaface_detect_faces(image, model_path: str, sess=None):
     else:
         retinaface = sess
 
-    resize = 1
+    source_height, source_width = image.shape[:2]
+    detection_image = image
+    if max(source_height, source_width) > MAX_DETECTION_SIDE:
+        ratio = MAX_DETECTION_SIDE / max(source_height, source_width)
+        detection_image = cv2.resize(
+            image,
+            (max(1, round(source_width * ratio)), max(1, round(source_height * ratio))),
+            interpolation=cv2.INTER_AREA,
+        )
 
-    # Read and preprocess the image
-    img_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # Only the bounded detection copy becomes a float32 model tensor.
+    img_rgb = cv2.cvtColor(detection_image, cv2.COLOR_BGR2RGB)
     img = np.float32(img_rgb)
-
     im_height, im_width, _ = img.shape
-    scale = np.array([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
+    # Predictions are normalized to the detector input. Scale each axis
+    # directly to the original image to account for resize rounding exactly.
+    scale = np.array([source_width, source_height, source_width, source_height])
     img -= (104, 117, 123)
     img = img.transpose(2, 0, 1)
     img = np.expand_dims(img, axis=0)
@@ -105,26 +118,13 @@ def retinaface_detect_faces(image, model_path: str, sess=None):
     prior_data = priors
 
     boxes = decode(np.squeeze(loc, axis=0), prior_data, cfg["variance"])
-    boxes = boxes * scale / resize
+    boxes = boxes * scale
     scores = np.squeeze(conf, axis=0)[:, 1]
 
     landms = decode_landm(np.squeeze(landms.data, axis=0), prior_data, cfg["variance"])
 
-    scale1 = np.array(
-        [
-            img.shape[3],
-            img.shape[2],
-            img.shape[3],
-            img.shape[2],
-            img.shape[3],
-            img.shape[2],
-            img.shape[3],
-            img.shape[2],
-            img.shape[3],
-            img.shape[2],
-        ]
-    )
-    landms = landms * scale1 / resize
+    scale1 = np.array([source_width, source_height] * 5)
+    landms = landms * scale1
 
     # ignore low scores
     inds = np.where(scores > confidence_threshold)[0]

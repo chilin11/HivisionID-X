@@ -116,7 +116,11 @@ python deploy_api.py
 | height | int | 否 | 输入图像的高度，默认为`413` |
 | width | int | 否 | 输入图像的宽度，默认为`295` |
 | kb | int | 否 | 输出照片的 KB 值，默认为`None`，即不对图像进行KB调整。|
-| dpi | int | 否 | 图像分辨率，默认为`300` |
+| dpi | int | 否 | 输入几何尺寸对应的 DPI，默认为 `300`。不指定 `output_dpi` 时也用作输出 DPI。 |
+| output_dpi | int | 否 | 输出 DPI（72–1200）。传 `600` 时直接使用高清源图，照片、整页像素、间距和裁剪线均按 `output_dpi / dpi` 缩放，纸张和照片的物理尺寸不变。省略时保留旧默认行为。 |
+| layout_height / layout_width | int | 否 | 纸张在 `dpi` 下的像素尺寸，默认 `1205` / `1795`。输出最多 4000 万像素，支持 A4 600 DPI。 |
+| keep_original_size | bool | 否 | 默认 `false`。为 `true` 且未指定 `output_dpi` 时按源图比例统一缩放整页，并同步提高 DPI，防止打印尺寸变大。 |
+| crop_line | bool | 否 | 是否添加裁剪线，默认 `false`。 |
 
 **返回参数：**
 
@@ -124,6 +128,10 @@ python deploy_api.py
 | :--- | :--- | :--- |
 | status | int | 状态码，`true`表示成功 |
 | image_base64 | str | 六寸排版照的base64编码 |
+| size | object | 实际输出像素尺寸，包含 `height` 和 `width`。 |
+| dpi | number | 实际输出 DPI，已写入图片元数据。 |
+
+网页排版默认使用高清成图、600 DPI、无损 PNG，不沿用报名照的 KB 限制。默认六寸页为 `3590×2410` 像素；打印时选择对应纸张和 **100% / 实际大小**，关闭“适应纸张”。原始细节仍取决于输入照片质量。
 
 <br>
 

@@ -9,7 +9,7 @@ r"""
 - POST /watermark              水印
 - POST /set_kb                 调整文件大小
 
-注：这批接口历史上一直工作正常，仅做模块化归位，不改动其通道处理逻辑。
+注：旧接口保留原有通道处理；排版支持按输出 DPI 同步缩放像素与打印尺寸。
 """
 import base64
 from typing import Optional
@@ -101,38 +101,67 @@ async def generate_layout_photos(
     layout_height: int = Form(1205),
     layout_width: int = Form(1795),
     crop_line: bool = Form(False),
+    output_dpi: Optional[int] = Form(None),
 ):
-    img = _decode_color(input_image, input_image_base64)
-    size = (int(height), int(width))
+    # Input geometry is measured at `dpi`. An explicit output DPI changes
+    # pixels, not paper/photo sizes; omitted output_dpi keeps legacy defaults.
+    if min(height, width, layout_height, layout_width, dpi) <= 0:
+        return {"status": False, "error": "Dimensions and DPI must be positive"}
+    if output_dpi is not None and not 72 <= output_dpi <= 1200:
+        return {"status": False, "error": "Output DPI must be within 72-1200"}
+    if kb is not None and kb <= 0:
+        return {"status": False, "error": "Target KB must be positive"}
+    try:
+        img = _decode_color(input_image, input_image_base64)
+    except Exception as e:
+        return {"status": False, "error": f"Invalid image: {e}"}
+
+    if output_dpi is not None:
+        scale = output_dpi / dpi
+    elif keep_original_size:
+        scale = min(img.shape[1] / width, img.shape[0] / height)
+    else:
+        scale = 1.0
+    export_dpi = output_dpi if output_dpi is not None else dpi * scale
+    output_width = max(1, round(layout_width * scale))
+    output_height = max(1, round(layout_height * scale))
+    # Includes A4 at 600 DPI (~35 MP), but rejects accidental giant canvases
+    # before allocating or encoding them.
+    if output_width * output_height > 40_000_000:
+        return {"status": False, "error": "Layout exceeds 40 megapixels; reduce paper size or output DPI"}
 
     typography_arr, typography_rotate = generate_layout_array(
-        input_height=size[0],
-        input_width=size[1],
+        input_height=height,
+        input_width=width,
         LAYOUT_HEIGHT=layout_height,
         LAYOUT_WIDTH=layout_width,
     )
+    if not typography_arr:
+        return {"status": False, "error": "Photo does not fit on the selected paper"}
 
     result_layout_image = generate_layout_image(
         img,
         typography_arr,
         typography_rotate,
-        height=size[0],
-        width=size[1],
+        height=height,
+        width=width,
         crop_line=crop_line,
         LAYOUT_HEIGHT=layout_height,
         LAYOUT_WIDTH=layout_width,
-        keep_original_size=keep_original_size,
-    ).astype(np.uint8)
+        output_scale=scale,
+    )
 
-    result_layout_image = cv2.cvtColor(result_layout_image, cv2.COLOR_RGB2BGR)
+    result_layout_image = cv2.cvtColor(result_layout_image, cv2.COLOR_BGR2RGB)
     if kb:
-        result_image_bytes = resize_image_to_kb(result_layout_image, None, int(kb), dpi=dpi)
+        result_image_bytes = resize_image_to_kb(result_layout_image, None, int(kb), dpi=export_dpi)
     else:
-        result_image_bytes = save_image_dpi_to_bytes(result_layout_image, None, dpi=dpi)
+        result_image_bytes = encoding.encode_png(result_layout_image, dpi=export_dpi)
 
     return {
         "status": True,
         "image_base64": bytes_2_base64(result_image_bytes),
+        "size": {"height": output_height, "width": output_width},
+        "dpi": export_dpi,
     }
 
 

@@ -41,12 +41,19 @@ def load_onnx_model(checkpoint_path, set_cpu=False):
         raise FileNotFoundError(f"Checkpoint file not found: {checkpoint_path}")
 
     providers = ['CPUExecutionProvider'] if set_cpu else get_best_providers()
+    options = ort.SessionOptions()
+    if os.getenv("RUN_MODE") != "beast":
+        # Large encoder/decoder graphs can otherwise retain multi-GB arena
+        # blocks beyond tensor lifetimes. Prefer bounded allocations by default;
+        # explicit beast mode keeps ONNX Runtime's throughput-oriented defaults.
+        options.enable_cpu_mem_arena = False
+        options.enable_mem_pattern = False
 
     try:
-        sess = ort.InferenceSession(checkpoint_path, providers=providers)
+        sess = ort.InferenceSession(checkpoint_path, sess_options=options, providers=providers)
     except Exception as e:
         print(f"Failed to load model {checkpoint_path} with providers {providers}: {e}")
         print("Falling back to CPUExecutionProvider...")
-        sess = ort.InferenceSession(checkpoint_path, providers=['CPUExecutionProvider'])
+        sess = ort.InferenceSession(checkpoint_path, sess_options=options, providers=['CPUExecutionProvider'])
 
     return sess

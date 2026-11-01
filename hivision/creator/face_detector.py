@@ -172,26 +172,19 @@ def detect_face_retinaface(ctx: Context):
     :param ctx: 上下文，此时已获取到原始图和抠图结果，但是我们只需要原始图
     :raise FaceError: 人脸检测错误，多个人脸或者没有人脸
     """
-    from time import time
-
     global RETINAFCE_SESS
 
-    if RETINAFCE_SESS is None:
-        # 计算用时
-        tic = time()
-        faces_dets, sess = retinaface_detect_faces(
-            ctx.origin_image,
-            os.path.join(base_dir, "retinaface/weights/retinaface-resnet50.onnx"),
-            sess=None,
-        )
-        RETINAFCE_SESS = sess
-    else:
-        tic = time()
-        faces_dets, _ = retinaface_detect_faces(
+    try:
+        faces_dets, RETINAFCE_SESS = retinaface_detect_faces(
             ctx.origin_image,
             os.path.join(base_dir, "retinaface/weights/retinaface-resnet50.onnx"),
             sess=RETINAFCE_SESS,
         )
+    finally:
+        # Match the matting models: only explicit beast mode retains sessions.
+        # Release on no-face and inference-error paths as well as success.
+        if os.getenv("RUN_MODE") != "beast":
+            RETINAFCE_SESS = None
 
     faces_num = len(faces_dets)
     if faces_num == 0:
@@ -222,7 +215,3 @@ def detect_face_retinaface(ctx: Context):
     dx = right_eye[0] - left_eye[0]
     roll_angle = np.degrees(np.arctan2(dy, dx))
     ctx.face["roll_angle"] = roll_angle
-
-    # 如果RUN_MODE不是野兽模式，则释放模型
-    if os.getenv("RUN_MODE") == "beast":
-        RETINAFCE_SESS = None

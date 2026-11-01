@@ -411,6 +411,7 @@ input[type="range"]::-webkit-slider-thumb:active{cursor:grabbing}
             <div class="chip" data-h="1051" data-w="1500">3R</div>
             <div class="chip" data-h="1205" data-w="1795">4R</div>
           </div>
+          <div class="action-note" data-i18n="layoutQuality">600 DPI · 高清原片排版 · 无损 PNG</div>
         </div></div>
       </div>
 
@@ -453,7 +454,7 @@ const T = {
     uploadFirst:'请先上传照片', sizeErr:'尺寸需在 100–1800px 之间',
     tabHd:'高清证件照', tabStd:'标准尺寸', tabMatting:'透明底',
     dlCur:'下载当前',
-    layoutTitle:'六寸排版照', genLayout:'重新排版',
+    layoutTitle:'高清排版照', genLayout:'重新排版',
     qTitle:'质量评估', qTop:'头顶留白', qCenter:'水平居中', qBottom:'底部贴合', qFallback:'兜底构图',
     qFaceMiss:'未检测到人脸，已用智能兜底构图（建议换正面清晰照）',
     qSmart:'智能构图', qSR:'AI 超分',
@@ -493,7 +494,7 @@ const T = {
     uploadFirst:'Upload a photo first', sizeErr:'Size must be 100–1800px',
     tabHd:'HD ID Photo', tabStd:'Standard size', tabMatting:'Transparent',
     dlCur:'Download',
-    layoutTitle:'Layout Photo', genLayout:'Re-layout',
+    layoutTitle:'HD Print Layout', genLayout:'Re-layout',
     qTitle:'Quality', qTop:'Top headroom', qCenter:'Centered', qBottom:'Bottom flush', qFallback:'Fallback framing',
     qFaceMiss:'No face detected — used smart fallback (try a clear front photo)',
     qSmart:'Smart', qSR:'AI Super-Res',
@@ -928,22 +929,28 @@ async function genLayout(force) {
   if (!force && box.dataset.done) return;
   try {
     const fd = new FormData();
-    fd.append('input_image', toBlob(S.result.image_base64_hd), 'hd.png');
-    fd.append('height', S.result.size.height); fd.append('width', S.result.size.width);
-    fd.append('dpi', S.result.dpi || S.dpi); fd.append('keep_original_size', 'false');
+    fd.append('input_image', toBlob(result.image_base64_hd), 'hd.png');
+    // Paper presets use 300 DPI. Normalize the photo to that same baseline,
+    // including custom-mm photos generated at a different DPI.
+    const photoScale = 300 / (result.dpi || 300);
+    fd.append('height', Math.max(1, Math.round(result.size.height * photoScale)));
+    fd.append('width', Math.max(1, Math.round(result.size.width * photoScale)));
+    fd.append('dpi', 300); fd.append('output_dpi', 600);
     fd.append('layout_height', S.pH); fd.append('layout_width', S.pW);
     fd.append('crop_line', S.cl);
     const r = await fetch('/generate_layout_photos', { method: 'POST', body: fd });
     const d = await r.json();
-    if (!d.status) throw new Error(t('layoutErr'));
+    if (!r.ok || !d.status) throw new Error(d.error || t('layoutErr'));
     if (S.result !== result || requestId !== S.layoutRequest) return;
     box = $('layA');
     if (!box) return;
     box.dataset.done = '1';
     box.innerHTML = `<div class="lay-card">
       <img src="${d.image_base64}">
-      <div class="lay-bar"><span class="lbl">${t('layoutTitle')}</span>
-      <a class="btn btn-p" href="${d.image_base64}" download="layout_${S.pH}x${S.pW}.png" style="font-size:.76rem;padding:6px 14px">${t('dlCur')}</a></div>
+      <div class="lay-bar"><div><span class="lbl" data-i18n="layoutTitle">${t('layoutTitle')}</span>
+      <div class="action-note" style="text-align:left">${d.size.width}×${d.size.height} px · ${d.dpi} DPI · PNG</div></div>
+      <a class="btn btn-p" href="${d.image_base64}" download="layout_${d.size.height}x${d.size.width}_${d.dpi}dpi.png" style="font-size:.76rem;padding:6px 14px">${t('dlCur')}</a></div>
+      <div class="action-note" style="padding:0 16px 14px" data-i18n="printNote">${t('printNote')}</div>
     </div>`;
     S.layout = box.innerHTML;
     if (force) msg(t('layoutDone'), 'ok');
@@ -957,6 +964,8 @@ Object.assign(T.zh, {
   sizeOneInch:'一寸 (413×295)', sizeTwoInch:'二寸 (626×413)', sizeSmallOneInch:'小一寸 (378×260)', sizeSmallTwoInch:'小二寸 (531×413)', sizeLargeOneInch:'大一寸 (567×390)',
   sizeUsVisa:'美国签证 (600×600)', sizeJapanVisa:'日本签证 (413×295)', sizeKoreaVisa:'韩国签证 (531×413)', sizeTeacher:'教师资格证 (413×295)', sizeCivilService:'公务员考试 (413×295)', sizeCET:'英语四六级 (192×144)', sizeComputer:'计算机等级 (567×390)', sizeGraduate:'研究生考试 (709×531)', sizeSocialSecurity:'社保卡 (441×358)', sizeDigitalLicense:'电子驾驶证 (378×260)',
   layout6Inch:'6 英寸', layout5Inch:'5 英寸',
+  layoutQuality:'600 DPI · 高清原片排版 · 无损 PNG',
+  printNote:'打印时选择对应纸张和 100% / 实际大小，关闭“适应纸张”，避免证件照尺寸变化。',
   hdPromise:'高清优先 · 默认无损 PNG', choosePhoto:'选择一张照片',
   guide1:'上传原始照片', guide1d:'正面、光线均匀，保留完整头顶与双肩。',
   guide2:'调整你的规格', guide2d:'选择尺寸与底色，智能构图，美颜按需开启。',
@@ -969,6 +978,8 @@ Object.assign(T.en, {
   sizeOneInch:'1-inch (413×295)', sizeTwoInch:'2-inch (626×413)', sizeSmallOneInch:'Small 1-inch (378×260)', sizeSmallTwoInch:'Small 2-inch (531×413)', sizeLargeOneInch:'Large 1-inch (567×390)',
   sizeUsVisa:'US Visa (600×600)', sizeJapanVisa:'Japan Visa (413×295)', sizeKoreaVisa:'Korea Visa (531×413)', sizeTeacher:'Teacher Certification (413×295)', sizeCivilService:'Civil Service Exam (413×295)', sizeCET:'CET-4 / CET-6 (192×144)', sizeComputer:'Computer Rank Exam (567×390)', sizeGraduate:'Graduate Entrance Exam (709×531)', sizeSocialSecurity:'Social Security Card (441×358)', sizeDigitalLicense:'Digital Driver License (378×260)',
   layout6Inch:'6-inch', layout5Inch:'5-inch',
+  layoutQuality:'600 DPI · HD source · Lossless PNG',
+  printNote:'Choose the matching paper and print at 100% / actual size. Disable fit-to-page to preserve photo dimensions.',
   hdPromise:'HD first · Lossless PNG by default', choosePhoto:'Choose a photo',
   guide1:'Start with an original', guide1d:'Face forward in even light, with your hair and shoulders visible.',
   guide2:'Make it yours', guide2d:'Set size and background. Fine-tune framing and beauty as needed.',

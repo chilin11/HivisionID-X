@@ -113,7 +113,11 @@ The logic of the `Generate Six-Inch Layout Photo` API is to receive an RGB image
 | height | int | No | The height of the standard ID photo, with a default value of `413`. |
 | width | int | No | The width of the standard ID photo, with a default value of `295`. |
 | kb | int | No | The target file size in KB. If the specified KB value is less than the original file, it adjusts the compression rate. If the specified KB value is greater than the source file, it increases the KB value by adding information to the file header, aiming for the final size of the image to match the specified KB value. |
-| dpi | int | No | The image resolution, with a default value of `300`. |
+| dpi | int | No | DPI of the input geometry; defaults to `300`. Also used for export unless `output_dpi` or native-size mode is specified. |
+| output_dpi | int | No | Output DPI (72–1200). Set to `600` to render directly from the HD source, scaling photo/sheet pixels, gutters and crop lines by `output_dpi / dpi` without changing physical print dimensions. Omit to retain legacy defaults. |
+| layout_height / layout_width | int | No | Paper pixels at `dpi`; default `1205` / `1795`. Output is limited to 40 megapixels, including A4 at 600 DPI. |
+| keep_original_size | bool | No | Defaults to `false`. When true without `output_dpi`, uniformly scales the sheet to the source resolution and updates DPI to preserve print dimensions. |
+| crop_line | bool | No | Add crop lines; defaults to `false`. |
 
 **Return Parameters:**
 
@@ -121,6 +125,10 @@ The logic of the `Generate Six-Inch Layout Photo` API is to receive an RGB image
 | :--- | :--- | :--- |
 | status | str | The status of the request, with a default value of `success`. |
 | image_base64 | str | The base64 encoding of the six-inch layout photo. |
+| size | object | Actual output pixel dimensions, with `height` and `width`. |
+| dpi | number | Actual output DPI, also embedded in the image metadata. |
+
+The web UI uses the HD source, 600 DPI and lossless PNG for layouts, independently of the submission file's KB limit. A default six-inch sheet is `3590×2410` pixels. Select matching paper and **100% / actual size**, not fit-to-page, when printing. Actual detail still depends on source quality.
 
 
 
